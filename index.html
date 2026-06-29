@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disponibilidade de Horários</title>
+
+  <!-- Google Fonts: Crimson Pro (headings) + Atkinson Hyperlegible (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Crimson+Pro:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <!-- Ícone calendário (Lucide / Heroicons — inline SVG, sem emoji) -->
+      <svg class="app-header-icon" width="22" height="22" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8"  y1="2" x2="8"  y2="6"/>
+        <line x1="3"  y1="10" x2="21" y2="10"/>
+      </svg>
+      <div>
+        <h1>Disponibilidade de Horários</h1>
+        <p>Informe seu nome e marque os horários em que você está disponível</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Identificação -->
+    <div class="card">
+      <div class="card-title">Identificação</div>
+      <div class="form-group">
+        <label class="form-label" for="name-input">
+          Seu nome <span style="color:var(--destructive)" aria-hidden="true">*</span>
+        </label>
+        <input
+          type="text"
+          id="name-input"
+          class="form-input"
+          placeholder="Ex: Ana Silva"
+          autocomplete="name"
+          maxlength="80"
+          required
+          aria-required="true"
+          aria-describedby="name-hint"
+        />
+        <p class="hint" id="name-hint">
+          Se precisar atualizar sua disponibilidade, use exatamente o mesmo nome.
+        </p>
+      </div>
+    </div>
+
+    <!-- Grade de horários -->
+    <div class="card">
+      <div class="card-title">Selecione os horários disponíveis</div>
+      <p class="hint" style="margin-bottom:.9rem;">
+        Clique para selecionar ou desmarcar. Clique e arraste para marcar vários de uma vez.
+      </p>
+      <div class="grid-wrapper" role="group" aria-label="Grade de disponibilidade de horários">
+        <table class="availability-grid" id="grid-table">
+          <thead id="grid-head"></thead>
+          <tbody id="grid-body"></tbody>
+        </table>
+      </div>
+      <p id="selected-count" class="hint" style="margin-top:.7rem;" aria-live="polite"></p>
+    </div>
+
+    <!-- Ações -->
+    <div class="card">
+      <!-- Botão principal em destaque máximo -->
+      <button
+        class="btn btn-primary"
+        id="save-btn"
+        style="width:100%;padding:.9rem 1.25rem;font-size:1rem;"
+        aria-label="Salvar minha disponibilidade de horários"
+      >
+        Salvar disponibilidade
+      </button>
+
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+
+      <!-- Ação secundária separada visualmente para evitar clique acidental -->
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;">
+        <button
+          class="btn btn-secondary"
+          id="clear-btn"
+          style="font-size:.8rem;padding:.4rem .9rem;color:var(--text-muted);border-color:var(--border);"
+          aria-label="Limpar todos os horários selecionados"
+        >
+          Limpar seleção
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

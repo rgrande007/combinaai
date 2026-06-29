@@ -1,0 +1,13 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Node (caso instale ferramentas futuras)
+node_modules/

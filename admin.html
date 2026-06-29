@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administrador — Disponibilidade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Crimson+Pro:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- =====================================================
+       Tela de Login com Google
+       ===================================================== -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+
+      <!-- Ícone da aplicação -->
+      <div class="auth-logo" aria-hidden="true">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round"
+             style="color:var(--primary)">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8"  y1="2" x2="8"  y2="6"/>
+          <line x1="3"  y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+
+      <h2>Painel do Administrador</h2>
+      <p class="auth-desc">
+        Faça login com sua conta Google para acessar os dados de disponibilidade dos participantes.
+      </p>
+
+      <!-- Botão "Continuar com o Google" — segue marca Google -->
+      <button class="btn-google" id="google-signin-btn" aria-label="Fazer login com conta Google">
+        <!-- Logo oficial do Google (4 cores) -->
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Continuar com o Google
+      </button>
+
+      <div id="auth-error" class="message message-error" style="margin-top:.75rem;" role="alert"></div>
+
+      <p class="hint" style="margin-top:1rem;font-size:.75rem;">
+        Apenas contas autorizadas têm acesso ao painel.
+      </p>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       Painel do Administrador (oculto até autenticar)
+       ===================================================== -->
+  <div class="admin-content" id="admin-content">
+
+    <header class="app-header">
+      <div class="app-header-inner" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+
+        <!-- Título + ícone -->
+        <div style="display:flex;align-items:center;gap:.65rem;">
+          <svg class="app-header-icon" width="22" height="22" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6"  y1="20" x2="6"  y2="14"/>
+            <line x1="2"  y1="20" x2="22" y2="20"/>
+          </svg>
+          <div>
+            <h1>Painel do Administrador</h1>
+            <p>Disponibilidade dos participantes · atualização em tempo real</p>
+          </div>
+        </div>
+
+        <!-- Info do usuário logado + botão sair -->
+        <div class="auth-user-info">
+          <img id="auth-avatar" class="auth-user-avatar" src="" alt="" style="display:none;" />
+          <span id="auth-display-name" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          <button class="btn-signout" id="signout-btn" aria-label="Sair da conta de administrador">
+            Sair
+          </button>
+        </div>
+
+      </div>
+    </header>
+
+    <main class="main-container">
+
+      <!-- ① RECOMENDAÇÃO — primeira informação, responde "quando reunir?" -->
+      <div class="card rec-partial" id="rec-card">
+        <div class="card-title" id="rec-title">Recomendação de Horário</div>
+        <p class="rec-subtitle" id="rec-subtitle">Aguardando respostas dos participantes.</p>
+        <div id="rec-content">
+          <div class="rec-empty hint">
+            Assim que os participantes enviarem suas disponibilidades,<br>
+            a melhor opção de horário aparecerá aqui.
+          </div>
+        </div>
+      </div>
+
+      <!-- ② RESUMO — quem respondeu -->
+      <div class="card">
+        <div class="card-title">Participantes</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="stat-total">0</div>
+            <div class="stat-label">Responderam</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-slots">40</div>
+            <div class="stat-label">Horários possíveis</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-best">—</div>
+            <div class="stat-label">Melhor cobertura</div>
+          </div>
+        </div>
+        <div class="section-label">Nomes registrados</div>
+        <div class="participant-list" id="participant-list" aria-live="polite">
+          <p class="hint">Nenhuma resposta ainda.</p>
+        </div>
+      </div>
+
+      <!-- ③ TABELA COMPLETA -->
+      <div class="card">
+        <div class="card-title">Tabela Completa de Disponibilidade</div>
+        <p class="hint" style="margin-bottom:.75rem;">
+          Passe o mouse sobre uma célula para ver os nomes disponíveis.
+        </p>
+        <div class="grid-wrapper">
+          <table class="availability-grid" id="admin-grid-table"
+                 aria-label="Tabela de disponibilidade por dia e horário">
+            <thead id="admin-grid-head"></thead>
+            <tbody id="admin-grid-body"></tbody>
+          </table>
+        </div>
+        <div class="legend" id="legend" aria-label="Legenda de cores"></div>
+      </div>
+
+      <!-- ④ AÇÕES -->
+      <div class="card">
+        <div class="card-title">Ações</div>
+        <div class="actions-bar">
+          <button class="btn btn-secondary" id="copy-btn"
+                  aria-label="Copiar recomendação de horário">
+            Copiar recomendação
+          </button>
+          <button class="btn btn-secondary" id="export-btn"
+                  aria-label="Exportar todas as respostas em CSV">
+            Exportar CSV
+          </button>
+          <button class="btn btn-danger" id="clear-all-btn"
+                  aria-label="Apagar permanentemente todas as respostas">
+            Limpar todas as respostas
+          </button>
+        </div>
+        <p class="hint" style="margin-top:.65rem;font-size:.75rem;">
+          <!-- ⚠️ E-mails autorizados estão em admin.js — suficiente para uso interno. -->
+          "Limpar todas as respostas" é permanente e irreversível.
+        </p>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
