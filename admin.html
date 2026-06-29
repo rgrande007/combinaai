@@ -6,23 +6,28 @@
   <title>Administrador — Disponibilidade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,300;1,9..144,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Previne flash de tema errado antes do CSS carregar -->
+  <script>
+    (function(){
+      var t;
+      try { t = localStorage.getItem('theme'); } catch(e){}
+      if (!t) { t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
 
-  <!-- =====================================================
-       Tela de Login com Google
-       ===================================================== -->
+  <!-- Tela de Login com Google -->
   <div class="auth-overlay" id="auth-overlay">
     <div class="auth-card">
 
-      <!-- Ícone da aplicação -->
       <div class="auth-logo" aria-hidden="true">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="1.5"
-             stroke-linecap="round" stroke-linejoin="round"
-             style="color:var(--primary)">
+             stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
           <line x1="16" y1="2" x2="16" y2="6"/>
           <line x1="8"  y1="2" x2="8"  y2="6"/>
@@ -35,9 +40,7 @@
         Faça login com sua conta Google para acessar os dados de disponibilidade dos participantes.
       </p>
 
-      <!-- Botão "Continuar com o Google" — segue marca Google -->
       <button class="btn-google" id="google-signin-btn" aria-label="Fazer login com conta Google">
-        <!-- Logo oficial do Google (4 cores) -->
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -55,15 +58,12 @@
     </div>
   </div>
 
-  <!-- =====================================================
-       Painel do Administrador (oculto até autenticar)
-       ===================================================== -->
+  <!-- Painel do Administrador (oculto até autenticar) -->
   <div class="admin-content" id="admin-content">
 
     <header class="app-header">
       <div class="app-header-inner" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
 
-        <!-- Título + ícone -->
         <div style="display:flex;align-items:center;gap:.65rem;">
           <svg class="app-header-icon" width="22" height="22" viewBox="0 0 24 24"
                fill="none" stroke="currentColor" stroke-width="2"
@@ -79,10 +79,10 @@
           </div>
         </div>
 
-        <!-- Info do usuário logado + botão sair -->
         <div class="auth-user-info">
           <img id="auth-avatar" class="auth-user-avatar" src="" alt="" style="display:none;" />
           <span id="auth-display-name" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          <button class="btn-theme-toggle" id="theme-toggle" aria-label="Alternar tema"></button>
           <button class="btn-signout" id="signout-btn" aria-label="Sair da conta de administrador">
             Sair
           </button>
@@ -93,7 +93,7 @@
 
     <main class="main-container">
 
-      <!-- ① RECOMENDAÇÃO — primeira informação, responde "quando reunir?" -->
+      <!-- ① RECOMENDAÇÃO -->
       <div class="card rec-partial" id="rec-card">
         <div class="card-title" id="rec-title">Recomendação de Horário</div>
         <p class="rec-subtitle" id="rec-subtitle">Aguardando respostas dos participantes.</p>
@@ -105,7 +105,7 @@
         </div>
       </div>
 
-      <!-- ② RESUMO — quem respondeu -->
+      <!-- ② RESUMO -->
       <div class="card">
         <div class="card-title">Participantes</div>
         <div class="stats-grid">
@@ -162,7 +162,6 @@
           </button>
         </div>
         <p class="hint" style="margin-top:.65rem;font-size:.75rem;">
-          <!-- ⚠️ E-mails autorizados estão em admin.js — suficiente para uso interno. -->
           "Limpar todas as respostas" é permanente e irreversível.
         </p>
       </div>
@@ -174,6 +173,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="theme.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

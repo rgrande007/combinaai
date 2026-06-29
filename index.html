@@ -6,8 +6,17 @@
   <title>Disponibilidade de Horários</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,300;1,9..144,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Previne flash de tema errado antes do CSS carregar -->
+  <script>
+    (function(){
+      var t;
+      try { t = localStorage.getItem('theme'); } catch(e){}
+      if (!t) { t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
 
@@ -71,6 +80,7 @@
         <div class="auth-user-info">
           <img id="auth-avatar" class="auth-user-avatar" src="" alt="" style="display:none;" />
           <span id="auth-display-name" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          <button class="btn-theme-toggle" id="theme-toggle" aria-label="Alternar tema"></button>
           <button class="btn-signout" id="signout-btn" aria-label="Sair">Sair</button>
         </div>
       </div>
@@ -161,6 +171,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="theme.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
