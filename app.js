@@ -17,24 +17,135 @@ var ALL_TIMES       = MORNING_TIMES.concat(AFTERNOON_TIMES);
 var selectedSlots = new Set();
 var isDragging    = false;
 var dragMode      = 'select';
+var currentUser   = null;
+
+// === Autenticação Google ===
+
+firebase.auth().onAuthStateChanged(function(user) {
+  if (user) {
+    currentUser = user;
+    showAppContent(user);
+  } else {
+    showAuthOverlay();
+  }
+});
+
+document.getElementById('google-signin-btn').addEventListener('click', function() {
+  var btn = document.getElementById('google-signin-btn');
+  btn.classList.add('loading');
+  btn.textContent = 'Aguarde...';
+  document.getElementById('auth-error').classList.remove('show');
+
+  var provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .catch(function(err) {
+      if (err.code !== 'auth/popup-closed-by-user' &&
+          err.code !== 'auth/cancelled-popup-request') {
+        var authError = document.getElementById('auth-error');
+        authError.textContent = 'Erro ao fazer login. Tente novamente.';
+        authError.classList.add('show');
+      }
+      resetGoogleBtn();
+    });
+});
+
+document.getElementById('signout-btn').addEventListener('click', function() {
+  firebase.auth().signOut();
+});
+
+function showAppContent(user) {
+  document.getElementById('auth-overlay').style.display = 'none';
+  document.getElementById('app-content').classList.add('visible');
+
+  // Avatar e nome no cabeçalho
+  var avatarEl = document.getElementById('auth-avatar');
+  var nameEl   = document.getElementById('auth-display-name');
+  if (user.photoURL) {
+    avatarEl.src = user.photoURL;
+    avatarEl.alt = user.displayName || '';
+    avatarEl.style.display = 'block';
+  }
+  nameEl.textContent = user.displayName || user.email;
+
+  // Pré-preenche o campo nome com o nome do Google (ou o último usado)
+  var nameInput = document.getElementById('name-input');
+  var savedName = '';
+  try { savedName = localStorage.getItem('avail_name') || ''; } catch(e) {}
+  nameInput.value = savedName || user.displayName || '';
+
+  buildGrid();
+  updateSelectedCount();
+  loadPreviousSelection(user);
+}
+
+function showAuthOverlay() {
+  document.getElementById('auth-overlay').style.display = 'flex';
+  document.getElementById('app-content').classList.remove('visible');
+  currentUser = null;
+}
+
+function resetGoogleBtn() {
+  var btn = document.getElementById('google-signin-btn');
+  btn.classList.remove('loading');
+  btn.innerHTML =
+    '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">' +
+      '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
+      '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +
+      '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>' +
+      '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>' +
+    '</svg>' +
+    'Entrar com o Google';
+}
+
+// === Carrega seleção anterior (pela conta Google) ===
+async function loadPreviousSelection(user) {
+  try {
+    var snapshot = await db.collection('availability')
+      .where('email', '==', user.email).get();
+    if (!snapshot.empty) {
+      var data = snapshot.docs[0].data();
+      if (data.slots && data.slots.length > 0) {
+        data.slots.forEach(function(slotId) {
+          selectedSlots.add(slotId);
+          var el = document.querySelector('[data-slot="' + CSS.escape(slotId) + '"]');
+          if (el) el.classList.add('selected');
+        });
+        updateSelectedCount();
+        // Usa o nome salvo anteriormente
+        if (data.name) {
+          var nameInput = document.getElementById('name-input');
+          try {
+            var savedName = localStorage.getItem('avail_name') || '';
+            if (!savedName) nameInput.value = data.name;
+          } catch(e) {}
+        }
+      }
+    }
+  } catch(err) {
+    console.error('Erro ao carregar seleção:', err);
+  }
+}
 
 // === Referências ao DOM ===
-var nameInput       = document.getElementById('name-input');
 var saveBtn         = document.getElementById('save-btn');
 var clearBtn        = document.getElementById('clear-btn');
 var messageEl       = document.getElementById('message');
 var selectedCountEl = document.getElementById('selected-count');
-var gridTable       = document.getElementById('grid-table');
-var gridHead        = document.getElementById('grid-head');
-var gridBody        = document.getElementById('grid-body');
 
 // === Construção da grade ===
 function buildGrid() {
+  var gridHead = document.getElementById('grid-head');
+  var gridBody = document.getElementById('grid-body');
+  var gridTable = document.getElementById('grid-table');
+
+  // Limpa caso chamado novamente
+  gridHead.innerHTML = '';
+  gridBody.innerHTML = '';
+
   // Cabeçalho
   var headerRow = document.createElement('tr');
   var emptyTh = document.createElement('th');
   headerRow.appendChild(emptyTh);
-
   DAYS.forEach(function(day) {
     var th = document.createElement('th');
     th.textContent = DAY_LABELS[day];
@@ -42,16 +153,22 @@ function buildGrid() {
   });
   gridHead.appendChild(headerRow);
 
-  // Seção Manhã
-  appendSectionRow('Manhã');
+  // Linhas
+  appendSectionRow('Manhã', gridBody);
   MORNING_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
-
-  // Seção Tarde
-  appendSectionRow('Tarde');
+  appendSectionRow('Tarde', gridBody);
   AFTERNOON_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
+
+  // Eventos de interação
+  gridTable.addEventListener('mousedown', onMouseDown);
+  gridTable.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', function() { isDragging = false; });
+  gridTable.addEventListener('touchstart', onTouchStart, { passive: false });
+  gridTable.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend', function() { isDragging = false; });
 }
 
-function appendSectionRow(label) {
+function appendSectionRow(label, gridBody) {
   var tr = document.createElement('tr');
   tr.className = 'section-row';
   var td = document.createElement('td');
@@ -63,50 +180,42 @@ function appendSectionRow(label) {
 
 function buildTimeRow(time) {
   var tr = document.createElement('tr');
-
   var timeTd = document.createElement('td');
   timeTd.className = 'time-label';
   timeTd.textContent = time;
   tr.appendChild(timeTd);
-
   DAYS.forEach(function(day) {
     var td = document.createElement('td');
     td.className = 'slot-cell';
-
     var inner = document.createElement('div');
     inner.className = 'slot-cell-inner';
     inner.dataset.slot = day + '_' + time;
-
     td.appendChild(inner);
     tr.appendChild(td);
   });
-
   return tr;
 }
 
 // === Interação: clique e arrastar ===
-gridTable.addEventListener('mousedown', function(e) {
+function onMouseDown(e) {
   var cell = e.target.closest('[data-slot]');
   if (!cell) return;
   isDragging = true;
   dragMode   = selectedSlots.has(cell.dataset.slot) ? 'deselect' : 'select';
   applyToggle(cell.dataset.slot);
-  e.preventDefault(); // evita seleção de texto ao arrastar
-});
+  e.preventDefault();
+}
 
-gridTable.addEventListener('mousemove', function(e) {
+function onMouseMove(e) {
   if (!isDragging) return;
   var cell = e.target.closest('[data-slot]');
   if (!cell) return;
   var has = selectedSlots.has(cell.dataset.slot);
   if (dragMode === 'select'   && !has) applyToggle(cell.dataset.slot);
   if (dragMode === 'deselect' &&  has) applyToggle(cell.dataset.slot);
-});
+}
 
-document.addEventListener('mouseup', function() { isDragging = false; });
-
-// Suporte a toque (mobile)
-gridTable.addEventListener('touchstart', function(e) {
+function onTouchStart(e) {
   var touch = e.touches[0];
   var el    = document.elementFromPoint(touch.clientX, touch.clientY);
   var cell  = el && el.closest('[data-slot]');
@@ -115,9 +224,9 @@ gridTable.addEventListener('touchstart', function(e) {
   dragMode   = selectedSlots.has(cell.dataset.slot) ? 'deselect' : 'select';
   applyToggle(cell.dataset.slot);
   e.preventDefault();
-}, { passive: false });
+}
 
-gridTable.addEventListener('touchmove', function(e) {
+function onTouchMove(e) {
   if (!isDragging) return;
   var touch = e.touches[0];
   var el    = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -127,9 +236,7 @@ gridTable.addEventListener('touchmove', function(e) {
   if (dragMode === 'select'   && !has) applyToggle(cell.dataset.slot);
   if (dragMode === 'deselect' &&  has) applyToggle(cell.dataset.slot);
   e.preventDefault();
-}, { passive: false });
-
-document.addEventListener('touchend', function() { isDragging = false; });
+}
 
 function applyToggle(slotId) {
   if (selectedSlots.has(slotId)) {
@@ -144,11 +251,9 @@ function applyToggle(slotId) {
 
 function updateSelectedCount() {
   var n = selectedSlots.size;
-  if (n === 0) {
-    selectedCountEl.textContent = 'Nenhum horário selecionado.';
-  } else {
-    selectedCountEl.textContent = n + ' horário' + (n !== 1 ? 's' : '') + ' selecionado' + (n !== 1 ? 's' : '') + '.';
-  }
+  selectedCountEl.textContent = n === 0
+    ? 'Nenhum horário selecionado.'
+    : n + ' horário' + (n !== 1 ? 's' : '') + ' selecionado' + (n !== 1 ? 's' : '') + '.';
 }
 
 // === Limpar seleção ===
@@ -165,6 +270,12 @@ clearBtn.addEventListener('click', function() {
 saveBtn.addEventListener('click', saveAvailability);
 
 async function saveAvailability() {
+  if (!currentUser) {
+    showMessage('Faça login antes de salvar.', 'error');
+    return;
+  }
+
+  var nameInput = document.getElementById('name-input');
   var name = nameInput.value.trim();
 
   if (!name) {
@@ -183,34 +294,28 @@ async function saveAvailability() {
   hideMessage();
 
   try {
+    var email     = currentUser.email;
     var nameLower = name.toLowerCase();
     var slots     = Array.from(selectedSlots);
+    var data      = {
+      name:        name,
+      nameLower:   nameLower,
+      email:       email,
+      slots:       slots,
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-    // Verifica se já existe resposta com esse nome
+    // Usa e-mail como chave de deduplicação (mais confiável que o nome)
     var snapshot = await db.collection('availability')
-      .where('nameLower', '==', nameLower)
-      .get();
+      .where('email', '==', email).get();
 
     if (!snapshot.empty) {
-      // Atualiza registro existente
-      await snapshot.docs[0].ref.update({
-        name:        name,
-        slots:       slots,
-        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      await snapshot.docs[0].ref.update(data);
     } else {
-      // Cria novo registro
-      await db.collection('availability').add({
-        name:        name,
-        nameLower:   nameLower,
-        slots:       slots,
-        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      await db.collection('availability').add(data);
     }
 
-    // Lembra o nome para a próxima visita
     try { localStorage.setItem('avail_name', name); } catch(e) {}
-
     showMessage('Disponibilidade registrada com sucesso!', 'success');
 
   } catch (err) {
@@ -230,13 +335,3 @@ function showMessage(text, type) {
   }
 }
 function hideMessage() { messageEl.classList.remove('show'); }
-
-// === Inicialização ===
-buildGrid();
-updateSelectedCount();
-
-// Pré-preenche o nome se o usuário já usou antes
-try {
-  var savedName = localStorage.getItem('avail_name');
-  if (savedName) nameInput.value = savedName;
-} catch(e) {}
