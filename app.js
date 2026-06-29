@@ -9,8 +9,8 @@ var DAY_LABELS = {
   'sexta':   'Sexta'
 };
 
-var MORNING_TIMES   = ['09:00', '09:30', '10:00', '10:30'];
-var AFTERNOON_TIMES = ['15:00', '15:30', '16:00', '16:30'];
+var MORNING_TIMES   = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00'];
+var AFTERNOON_TIMES = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'];
 var ALL_TIMES       = MORNING_TIMES.concat(AFTERNOON_TIMES);
 
 // === Estado ===
