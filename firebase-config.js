@@ -7,7 +7,7 @@
 // ============================================================
 
 var firebaseConfig = {
-  apiKey:            "AIzaSyBTnF9yzUPDqsm9rwpEFjhu0gfbYommAcw",
+  apiKey:            "AIzaSyBTnF9yzUPDqsm9rwpEFjhuOgfbYommAcw",
   authDomain:        "caledario-df4f1.firebaseapp.com",
   projectId:         "caledario-df4f1",
   storageBucket:     "caledario-df4f1.firebasestorage.app",
