@@ -193,10 +193,9 @@ function renderRecommendation(responses) {
   }
 
   // ─── Dados ──────────────────────────────────────────────────
-  var data      = getSlotData(responses);
-  var maxCount  = data.maxCount;
-  var allNames  = responses.map(function(r) { return r.name; });
-  var isAll     = (maxCount === total);
+  var data     = getSlotData(responses);
+  var maxCount = data.maxCount;
+  var isAll    = (maxCount === total);
 
   if (maxCount === 0) {
     subtitleEl.textContent = total + ' participante(s) registrado(s), mas nenhum horário em comum.';
@@ -204,140 +203,71 @@ function renderRecommendation(responses) {
     return;
   }
 
-  // ─── Classificar todos os slots com alguma disponibilidade ──
+  // ─── Classificar slots com disponibilidade ──────────────────
   var ranked = [];
   DAYS.forEach(function(day) {
     ALL_TIMES.forEach(function(time) {
       var key   = day + '_' + time;
       var count = data.counts[key] || 0;
-      if (count > 0) {
-        ranked.push({
-          day:         day,
-          time:        time,
-          count:       count,
-          available:   data.namesBySlot[key] || [],
-          unavailable: allNames.filter(function(n) {
-            return (data.namesBySlot[key] || []).indexOf(n) === -1;
-          })
-        });
-      }
+      if (count > 0) ranked.push({ day: day, time: time, count: count });
     });
   });
-
-  // Ordena: maior contagem → depois por dia → depois por horário
   ranked.sort(function(a, b) {
     if (b.count !== a.count) return b.count - a.count;
     var dd = DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
     return dd !== 0 ? dd : ALL_TIMES.indexOf(a.time) - ALL_TIMES.indexOf(b.time);
   });
 
-  // Sempre mostrar ao menos os slots empatados no 1º lugar + até 5 total
+  // Mostrar apenas os slots empatados no 1º lugar, máximo 3
   var topCount  = ranked.filter(function(s) { return s.count === maxCount; }).length;
-  var showCount = Math.min(Math.max(topCount, 3), 5);
+  var showCount = Math.min(topCount, 3);
   var topSlots  = ranked.slice(0, showCount);
 
   // ─── Título e subtítulo ─────────────────────────────────────
   if (isAll) {
-    cardEl.className   = 'card rec-unanimous';
-    titleEl.textContent = 'Horário Ideal Encontrado';
+    cardEl.className    = 'card rec-unanimous';
+    titleEl.textContent = 'Horário Ideal';
     subtitleEl.innerHTML =
-      'Há ' + topCount + ' horário(s) em que <strong>todos os ' +
-      total + ' participantes</strong> estão disponíveis.';
+      '<strong>Todos os ' + total + ' participantes</strong> disponíveis nos horários abaixo.';
   } else {
     titleEl.textContent = 'Recomendação de Horário';
     subtitleEl.innerHTML =
-      'Nenhum horário atende a todos. Melhor opção: <strong>' +
-      maxCount + ' de ' + total + ' participantes</strong> disponíveis.';
+      'Melhor opção: <strong>' + maxCount + ' de ' + total + '</strong> participantes disponíveis.';
   }
 
-  // ─── Lista de opções ────────────────────────────────────────
+  // ─── Lista simplificada (dia, hora, contagem) ────────────────
   contentEl.innerHTML = '';
   var list = document.createElement('div');
   list.className = 'rec-list';
 
   topSlots.forEach(function(slot, i) {
-    var isTopSlot = (slot.count === maxCount);
     var isAllSlot = (slot.count === total);
-    var pct       = Math.round((slot.count / total) * 100);
-
-    var cls = 'rec-slot';
-    if (i === 0)   cls += isAllSlot ? ' rec-slot-top-all' : ' rec-slot-top';
-    else if (isTopSlot) cls += isAllSlot ? ' rec-slot-top-all' : ' rec-slot-top';
-    else           cls += ' rec-slot-secondary';
-
-    var absent = slot.unavailable.length > 0
-      ? '<div class="rec-absent"><strong>Ausentes:</strong> ' +
-          slot.unavailable.join(', ') + '</div>'
-      : '';
-
-    var allBadge = isAllSlot ? '<span class="badge-all">Todos</span>' : '';
-
     var el = document.createElement('div');
-    el.className = cls;
+    el.className = 'rec-slot' + (isAllSlot ? ' rec-slot-top-all' : ' rec-slot-top');
     el.innerHTML =
       '<div class="rec-rank">' + (i + 1) + '</div>' +
       '<div class="rec-body">' +
         '<div class="rec-time">' + DAY_LABELS_FULL[slot.day] + ', ' + slot.time +
-          (allBadge ? ' ' + allBadge : '') +
+          (isAllSlot ? ' <span class="badge-all">Todos</span>' : '') +
         '</div>' +
-        '<div class="rec-avail">' + slot.available.join(', ') + '</div>' +
-        absent +
       '</div>' +
       '<div class="rec-score">' +
         '<div class="rec-score-num">' + slot.count +
           '<span class="rec-score-den">/' + total + '</span>' +
         '</div>' +
-        '<div class="rec-score-pct">' + pct + '%</div>' +
       '</div>';
-
     list.appendChild(el);
   });
   contentEl.appendChild(list);
 
-  // Aviso se há mais opções além das exibidas
   var remaining = ranked.length - showCount;
   if (remaining > 0) {
     var moreP = document.createElement('p');
     moreP.className = 'hint';
-    moreP.style.marginTop = '.65rem';
-    moreP.textContent = '+ ' + remaining +
-      ' outro(s) horário(s) disponíveis na tabela completa abaixo.';
+    moreP.style.marginTop = '.5rem';
+    moreP.textContent = '+ ' + remaining + ' opção(ões) na tabela abaixo.';
     contentEl.appendChild(moreP);
   }
-
-  // ─── Resumo por dia da semana ────────────────────────────────
-  var dayBest = {};
-  DAYS.forEach(function(day) {
-    dayBest[day] = 0;
-    ALL_TIMES.forEach(function(time) {
-      dayBest[day] = Math.max(dayBest[day], data.counts[day + '_' + time] || 0);
-    });
-  });
-
-  var globalMax = Math.max.apply(null, Object.values(dayBest));
-
-  var daySummary = document.createElement('div');
-  daySummary.className = 'day-summary';
-
-  var label = document.createElement('span');
-  label.className = 'hint';
-  label.style.width = '100%';
-  label.style.marginBottom = '.25rem';
-  label.textContent = 'Disponibilidade máxima por dia:';
-  daySummary.appendChild(label);
-
-  DAYS.forEach(function(day) {
-    var chip = document.createElement('div');
-    var isBestDay = dayBest[day] === globalMax;
-    var isBestAll = isBestDay && globalMax === total;
-    chip.className = 'day-chip' +
-      (isBestAll ? ' best-day-all' : isBestDay ? ' best-day' : '');
-    chip.innerHTML =
-      '<span>' + DAY_LABELS[day] + '</span>' +
-      '<span class="day-chip-score">' + dayBest[day] + '/' + total + '</span>';
-    daySummary.appendChild(chip);
-  });
-  contentEl.appendChild(daySummary);
 }
 
 // ============================================================

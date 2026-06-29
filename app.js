@@ -67,11 +67,14 @@ function showAppContent(user) {
   }
   nameEl.textContent = user.displayName || user.email;
 
-  // Pré-preenche o campo nome com o nome do Google (ou o último usado)
+  // Pré-preenche nome e email da conta Google
   var nameInput = document.getElementById('name-input');
   var savedName = '';
   try { savedName = localStorage.getItem('avail_name') || ''; } catch(e) {}
   nameInput.value = savedName || user.displayName || '';
+
+  var emailDisplay = document.getElementById('email-display');
+  if (emailDisplay) emailDisplay.value = user.email;
 
   buildGrid();
   updateSelectedCount();
