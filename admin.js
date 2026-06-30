@@ -140,10 +140,101 @@ function resetGoogleBtn() {
 var currentResponses    = [];
 var firestoreUnsubscribe = null;
 
+// ============================================================
+// TOOLTIP DE NOMES POR HORÁRIO
+// ============================================================
+var _adminTooltip = null;
+
+function createAdminTooltip() {
+  if (document.getElementById('admin-tooltip')) {
+    _adminTooltip = document.getElementById('admin-tooltip');
+    return;
+  }
+  var tip = document.createElement('div');
+  tip.className = 'admin-tooltip';
+  tip.id = 'admin-tooltip';
+  tip.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(tip);
+  _adminTooltip = tip;
+}
+
+function showAdminTooltip(cell) {
+  if (!_adminTooltip) return;
+
+  var names = [];
+  try { names = JSON.parse(cell.dataset.names || '[]'); } catch(e) {}
+  var slotLabel = cell.dataset.slotLabel || '';
+  var allNames  = currentResponses.map(function(r) { return r.name; });
+  var absent    = allNames.filter(function(n) { return names.indexOf(n) === -1; });
+
+  var html = '<div class="admin-tooltip-slot">' + escHtml(slotLabel) + '</div>';
+
+  if (names.length > 0) {
+    html += '<div class="admin-tooltip-section avail">';
+    html += '<div class="admin-tooltip-label">Disponíveis (' + names.length + ')</div>';
+    names.forEach(function(n) {
+      html += '<div class="admin-tooltip-name">' + escHtml(n) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  if (absent.length > 0) {
+    html += '<div class="admin-tooltip-section absent">';
+    html += '<div class="admin-tooltip-label">Ausentes (' + absent.length + ')</div>';
+    absent.forEach(function(n) {
+      html += '<div class="admin-tooltip-name">' + escHtml(n) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  if (allNames.length === 0) {
+    html += '<div class="admin-tooltip-none">Sem respostas ainda</div>';
+  } else if (names.length === 0) {
+    html += '<div class="admin-tooltip-none">Ninguém disponível</div>';
+  }
+
+  _adminTooltip.innerHTML = html;
+
+  // Posiciona fora da tela para medir altura antes de exibir
+  _adminTooltip.style.left = '-9999px';
+  _adminTooltip.style.top  = '-9999px';
+  _adminTooltip.classList.add('visible');
+
+  var tipW = _adminTooltip.offsetWidth;
+  var tipH = _adminTooltip.offsetHeight;
+  var rect = cell.getBoundingClientRect();
+  var vw   = window.innerWidth;
+  var vh   = window.innerHeight;
+
+  var left = rect.right + 10;
+  var top  = rect.top;
+
+  if (left + tipW > vw - 12) left = rect.left - tipW - 10;
+  if (left < 8) left = 8;
+  if (top + tipH > vh - 12) top = vh - tipH - 12;
+  if (top < 8) top = 8;
+
+  _adminTooltip.style.left = left + 'px';
+  _adminTooltip.style.top  = top  + 'px';
+}
+
+function hideAdminTooltip() {
+  if (_adminTooltip) _adminTooltip.classList.remove('visible');
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // === Inicialização do painel ===
 function initAdmin() {
   // Evita múltiplas inscrições (ex: re-login sem reload)
   if (firestoreUnsubscribe) firestoreUnsubscribe();
+  createAdminTooltip();
 
   firestoreUnsubscribe = db.collection('availability').onSnapshot(function(snapshot) {
     currentResponses = snapshot.docs
@@ -388,9 +479,10 @@ function renderAdminGrid(responses) {
         inner.innerHTML = total === 0
           ? '<span class="count">—</span>'
           : '<span class="count">' + count + '</span><span class="fraction">/' + total + '</span>';
-        inner.title = names.length > 0
-          ? 'Disponíveis: ' + names.join(', ')
-          : 'Ninguém disponível';
+        inner.dataset.slotLabel = DAY_LABELS[day] + ' · ' + time;
+        inner.dataset.names     = JSON.stringify(names);
+        inner.addEventListener('mouseenter', function() { showAdminTooltip(this); });
+        inner.addEventListener('mouseleave', hideAdminTooltip);
 
         td.appendChild(inner);
         tr.appendChild(td);

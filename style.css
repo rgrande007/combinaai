@@ -759,6 +759,72 @@ body {
 }
 
 /* =============================================
+   Tooltip do painel admin
+   ============================================= */
+.admin-tooltip {
+  position: fixed;
+  z-index: 500;
+  background: #0A1E1B;
+  border: 1px solid rgba(27,168,144,0.3);
+  border-radius: 10px;
+  padding: .7rem .9rem;
+  font-size: .78rem;
+  font-family: var(--font-body);
+  color: #F6F7F2;
+  max-width: 220px;
+  min-width: 150px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.97);
+  transition: opacity .15s ease, transform .15s ease;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(27,168,144,0.08);
+}
+.admin-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.admin-tooltip-slot {
+  font-family: var(--font-display);
+  font-size: .75rem;
+  font-weight: 700;
+  color: #AEE1D4;
+  margin-bottom: .45rem;
+  padding-bottom: .4rem;
+  border-bottom: 1px solid rgba(27,168,144,0.18);
+}
+.admin-tooltip-section { margin-top: .35rem; }
+.admin-tooltip-label {
+  font-size: .6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: .2rem;
+}
+.admin-tooltip-section.avail  .admin-tooltip-label { color: #1BA890; }
+.admin-tooltip-section.absent .admin-tooltip-label { color: #F87171; }
+.admin-tooltip-name {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .07rem 0;
+  line-height: 1.4;
+}
+.admin-tooltip-name::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.admin-tooltip-section.avail  .admin-tooltip-name::before { background: #1BA890; }
+.admin-tooltip-section.absent .admin-tooltip-name::before { background: #F87171; }
+.admin-tooltip-none {
+  font-size: .75rem;
+  color: rgba(246,247,242,0.38);
+  font-style: italic;
+}
+
+/* =============================================
    prefers-reduced-motion
    ============================================= */
 @media (prefers-reduced-motion: reduce) {
