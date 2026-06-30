@@ -9,5 +9,9 @@ Thumbs.db
 # Logs
 *.log
 
-# Node (caso instale ferramentas futuras)
+# Node
 node_modules/
+
+# Skills installer
+.agents/
+skills-lock.json
