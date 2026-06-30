@@ -136,7 +136,7 @@
     border: 1px solid rgba(27,168,144,.35);
     background: rgba(27,168,144,.08);
     color: var(--primary);
-    font-size: .7rem;
+    font-size: .78rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
@@ -216,10 +216,25 @@
     box-shadow: 0 8px 28px rgba(27,168,144,.32);
   }
   .btn-hero:active { transform: translateY(0); }
-  .btn-hero.loading { pointer-events: none; opacity: .8; }
+  .btn-hero.loading {
+    pointer-events: none;
+    color: transparent;
+  }
+  .btn-hero.loading svg { opacity: 0; }
+  .btn-hero.loading::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border: 2.5px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+  }
   .hero-sub {
-    font-size: .74rem;
-    color: var(--text-dim);
+    font-size: .84rem;
+    color: var(--text-muted);
   }
   #hero-login-error {
     font-size: .82rem;
@@ -228,6 +243,135 @@
     margin-top: -.3rem;
   }
   #hero-login-error.show { display: block; }
+
+  /* Preview do produto — mini-grid de disponibilidade */
+  .hero-preview {
+    margin-top: 3rem;
+    width: 100%;
+    max-width: 400px;
+    animation: fadeUp .5s .42s both;
+  }
+  .hero-preview-card {
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem 1.25rem;
+    box-shadow: 0 24px 56px rgba(0,0,0,.35);
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+  }
+  .hero-preview-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(27,168,144,.5), transparent);
+  }
+  .hero-preview-bar {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    margin-bottom: 1.1rem;
+  }
+  .hero-preview-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .hero-preview-dot.red    { background: #F87171; }
+  .hero-preview-dot.yellow { background: #FBBF24; }
+  .hero-preview-dot.green  { background: #34D399; }
+  .hero-preview-label {
+    margin-left: .45rem;
+    font-size: .65rem;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hero-preview-days {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    margin-bottom: 5px;
+  }
+  .hero-preview-days span {
+    font-size: .62rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .hero-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    margin-bottom: 1rem;
+  }
+  .hero-preview-grid span {
+    height: 26px;
+    border-radius: 5px;
+  }
+  .hero-preview-grid .h0 { background: var(--surface-2); border: 1px solid var(--border); }
+  .hero-preview-grid .h1 { background: #FDE68A; border: 1px solid #F59E0B; }
+  .hero-preview-grid .h2 { background: #AEE1D4; border: 1px solid #85C8B8; }
+  .hero-preview-grid .h3 { background: var(--primary); border: 1px solid var(--primary-dark); }
+  .hero-preview-best {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .78rem;
+    color: var(--text-muted);
+    padding-top: .9rem;
+    border-top: 1px solid var(--border);
+  }
+  .hero-preview-best strong { color: var(--text); font-family: var(--font-display); font-weight: 700; }
+  .hero-preview-best svg { color: var(--primary); flex-shrink: 0; }
+
+  /* Faixa de palavras-chave — scroll infinito */
+  .keyword-strip {
+    width: 100%;
+    overflow: hidden;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1rem 0;
+    position: relative;
+  }
+  .keyword-strip::before,
+  .keyword-strip::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 80px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .keyword-strip::before { left: 0;  background: linear-gradient(90deg,  var(--surface), transparent); }
+  .keyword-strip::after  { right: 0; background: linear-gradient(270deg, var(--surface), transparent); }
+  .keyword-track {
+    display: flex;
+    width: max-content;
+    gap: 2.5rem;
+    animation: marquee 26s linear infinite;
+  }
+  .keyword-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-family: var(--font-display);
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .keyword-item svg { color: var(--primary); flex-shrink: 0; }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .keyword-track { animation: none; }
+  }
 
   /* Como funciona */
   .how-section {
@@ -330,7 +474,7 @@
   }
   .role-badge {
     display: inline-block;
-    font-size: .62rem;
+    font-size: .72rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .1em;
@@ -553,6 +697,11 @@
     background: rgba(246,247,242,.9);
     border-color: rgba(15,46,42,.08);
   }
+  /* Eyebrow em modo claro: #1BA890 em fundo claro falha 4.5:1 — usar verde escuro (#0C6B58 = 6:1) */
+  [data-theme="light"] .hero-eyebrow {
+    color: #0C6B58;
+    border-color: rgba(27,168,144,.5);
+  }
   [data-theme="light"] .step,
   [data-theme="light"] .role-card {
     background: #fff;
@@ -568,10 +717,222 @@
     .roles-grid { grid-template-columns: 1fr; }
     .hero { padding: 3.5rem 1.25rem 3rem; }
     .landing-header { padding: 1rem 1.25rem; }
+    .hero-preview { max-width: 100%; }
+    .keyword-strip::before,
+    .keyword-strip::after { width: 40px; }
+    .keyword-item { font-size: .78rem; }
     .session-active-header { flex-direction: column; }
     .session-active-actions { width: 100%; }
     .session-active-actions .btn,
     .session-active-actions .btn-whatsapp { flex: 1; justify-content: center; }
+  }
+
+  /* ═══════════════════════════════════════════
+     HERO — VIDA VISUAL
+  ═══════════════════════════════════════════ */
+
+  /* Aurora violeta no canto inferior-direito do hero */
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 55%; height: 60%;
+    background: radial-gradient(circle at 70% 80%, rgba(107,76,246,.13) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Conteúdo acima dos orbes */
+  .hero-eyebrow, .hero-title, .hero-desc,
+  .hero-actions, .hero-preview { position: relative; z-index: 1; }
+
+  /* Pills flutuantes de pessoas */
+  .hero-avatars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .hero-av {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: .38rem;
+    padding: .32rem .72rem .32rem .32rem;
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: 999px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.28);
+    font-size: .68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    opacity: 0;
+  }
+  .hero-av-init {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .6rem; font-weight: 800; color: #fff;
+    flex-shrink: 0;
+    letter-spacing: 0;
+  }
+  .hero-av-1 { top: 17%; left: 5%;   animation: avAppear .6s .9s  both, avFloat 9s  .9s  ease-in-out infinite alternate; }
+  .hero-av-2 { top: 36%; right: 4%;  animation: avAppear .6s 1.3s both, avFloat 11s 1.3s ease-in-out infinite alternate-reverse; }
+  .hero-av-3 { bottom: 30%; left: 6%; animation: avAppear .6s 1.6s both, avFloat 8s  1.6s ease-in-out infinite alternate; }
+  .hero-av-4 { top: 10%; right: 7%;  animation: avAppear .6s 2.0s both, avFloat 12s 2.0s ease-in-out infinite alternate-reverse; }
+  @keyframes avAppear {
+    from { opacity: 0; transform: scale(.85) translateY(6px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0); }
+  }
+  @keyframes avFloat {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-10px); }
+  }
+  @media (max-width: 960px) { .hero-av-2, .hero-av-4 { display: none; } }
+  @media (max-width: 600px) { .hero-avatars { display: none; } }
+
+  /* Indicador "ao vivo" dentro do card preview */
+  .hero-preview-live {
+    display: flex; align-items: center; gap: .42rem;
+    font-size: .68rem; font-weight: 600;
+    color: var(--text-muted);
+    padding-bottom: .85rem; margin-bottom: .85rem;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .4s 1s both;
+  }
+  .hero-preview-live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #34D399; flex-shrink: 0;
+    animation: liveGlow 2s 1s ease-in-out infinite;
+  }
+  @keyframes liveGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,.7); }
+    50%       { box-shadow: 0 0 0 5px rgba(52,211,153,0); }
+  }
+
+  /* Células do heatmap surgem em cascata */
+  .hero-preview-grid span { animation: cellReveal .35s cubic-bezier(.34,1.56,.64,1) both; }
+  .hero-preview-grid span:nth-child(1)  { animation-delay: 1.00s; }
+  .hero-preview-grid span:nth-child(2)  { animation-delay: 1.04s; }
+  .hero-preview-grid span:nth-child(3)  { animation-delay: 1.08s; }
+  .hero-preview-grid span:nth-child(4)  { animation-delay: 1.12s; }
+  .hero-preview-grid span:nth-child(5)  { animation-delay: 1.16s; }
+  .hero-preview-grid span:nth-child(6)  { animation-delay: 1.20s; }
+  .hero-preview-grid span:nth-child(7)  { animation-delay: 1.24s; }
+  .hero-preview-grid span:nth-child(8)  { animation-delay: 1.28s; }
+  .hero-preview-grid span:nth-child(9)  { animation-delay: 1.32s; }
+  .hero-preview-grid span:nth-child(10) { animation-delay: 1.36s; }
+  .hero-preview-grid span:nth-child(11) { animation-delay: 1.40s; }
+  .hero-preview-grid span:nth-child(12) { animation-delay: 1.44s; }
+  .hero-preview-grid span:nth-child(13) { animation-delay: 1.48s; }
+  .hero-preview-grid span:nth-child(14) { animation-delay: 1.52s; }
+  .hero-preview-grid span:nth-child(15) { animation-delay: 1.56s; }
+  @keyframes cellReveal {
+    from { opacity: 0; transform: scale(.65); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* ═══════════════════════════════════════════
+     PAINEL ADMIN — REDESIGN ESTÉTICO
+  ═══════════════════════════════════════════ */
+
+  /* Banner de boas-vindas */
+  .admin-welcome {
+    background: linear-gradient(135deg, rgba(27,168,144,.12), rgba(107,76,246,.07));
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    padding: 1rem 1.3rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    animation: fadeUp .4s both;
+  }
+  .admin-welcome-left { display: flex; align-items: center; gap: .85rem; }
+  .admin-welcome-ico {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(27,168,144,.3);
+  }
+  .admin-welcome-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: .92rem;
+    color: var(--text);
+  }
+  .admin-welcome-sub { font-size: .7rem; color: var(--text-muted); margin-top: .1rem; }
+  .admin-live-pill {
+    display: flex; align-items: center; gap: .35rem;
+    font-size: .7rem; font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-light);
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+    padding: .28rem .9rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .admin-live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--primary);
+    animation: liveGlow 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  /* Card de criar sessão — cabeçalho com ícone */
+  #session-creator-card { border-color: var(--border-bright); }
+  .admin-create-top {
+    display: flex; align-items: center; gap: .9rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-create-ico {
+    width: 42px; height: 42px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(27,168,144,.32);
+    color: #fff;
+  }
+  #session-creator-card .card-title { margin-bottom: .1rem; }
+  #session-creator-card .hint { margin: 0; }
+  #session-creator-card .form-input { max-width: 100%; }
+
+  /* Lista de sessões — dot vira ícone-quadrado */
+  .session-list-dot {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--primary-light);
+    border: 1px solid var(--border-bright);
+    box-shadow: none;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .session-list-dot::after {
+    content: '';
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 8px rgba(27,168,144,.55);
+  }
+  .session-list-item { display: flex; flex-direction: row; align-items: center; padding: .95rem 1.1rem; border-radius: var(--radius); gap: 1rem; }
+  .session-list-item:hover { box-shadow: 0 4px 20px rgba(27,168,144,.12); }
+  .session-list-title { font-size: .9rem; letter-spacing: -.01em; }
+
+  /* Guard reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-av { animation: none !important; opacity: .8; }
+    .hero-preview-grid span { animation: none !important; opacity: 1; }
+    .hero-preview-live, .hero-preview-live-dot, .admin-live-dot { animation: none; }
   }
   </style>
 </head>
@@ -656,7 +1017,122 @@
             <p class="hero-sub">Login seguro · dados protegidos</p>
             <p id="hero-login-error" role="alert"></p>
           </div>
+
+          <!-- Pills flutuantes de disponibilidade -->
+          <div class="hero-avatars" aria-hidden="true">
+            <div class="hero-av hero-av-1">
+              <div class="hero-av-init" style="background:#1BA890">M</div>
+              Disponível ✓
+            </div>
+            <div class="hero-av hero-av-2">
+              <div class="hero-av-init" style="background:#6B4CF6">R</div>
+              Respondeu agora
+            </div>
+            <div class="hero-av hero-av-3">
+              <div class="hero-av-init" style="background:#F59E0B">A</div>
+              3 horários em comum
+            </div>
+            <div class="hero-av hero-av-4">
+              <div class="hero-av-init" style="background:#EC4899">J</div>
+              Disponível ✓
+            </div>
+          </div>
+
+          <!-- Preview do produto -->
+          <div class="hero-preview" aria-hidden="true">
+            <div class="hero-preview-card">
+              <div class="hero-preview-bar">
+                <span class="hero-preview-dot red"></span>
+                <span class="hero-preview-dot yellow"></span>
+                <span class="hero-preview-dot green"></span>
+                <span class="hero-preview-label">combinai.app/sessao/alinhamento-q3</span>
+              </div>
+              <!-- Indicador ao vivo -->
+              <div class="hero-preview-live">
+                <span class="hero-preview-live-dot"></span>
+                Sessão ao vivo · 4/5 responderam
+              </div>
+              <div class="hero-preview-days">
+                <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span>
+              </div>
+              <div class="hero-preview-grid">
+                <span class="h1"></span><span class="h2"></span><span class="h1"></span><span class="h2"></span><span class="h0"></span>
+                <span class="h0"></span><span class="h1"></span><span class="h2"></span><span class="h2"></span><span class="h1"></span>
+                <span class="h1"></span><span class="h0"></span><span class="h2"></span><span class="h3"></span><span class="h1"></span>
+              </div>
+              <div class="hero-preview-best">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Melhor horário: <strong>Qui, 14h</strong> · 4/5 disponíveis
+              </div>
+            </div>
+          </div>
         </section>
+
+        <!-- Faixa de palavras-chave -->
+        <div class="keyword-strip" aria-hidden="true">
+          <div class="keyword-track">
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Sem planilhas
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Tempo real
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              100% grátis
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Sem cadastro manual
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Compartilhe por link
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              WhatsApp integrado
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Login seguro com Google
+            </span>
+            <!-- duplicado para loop contínuo -->
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Sem planilhas
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Tempo real
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              100% grátis
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Sem cadastro manual
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Compartilhe por link
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              WhatsApp integrado
+            </span>
+            <span class="keyword-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Login seguro com Google
+            </span>
+          </div>
+        </div>
 
         <!-- Como funciona -->
         <section class="how-section" aria-labelledby="how-title">
@@ -743,6 +1219,29 @@
 
     <main class="main-container" id="main-content">
 
+      <!-- ── Boas-vindas ── -->
+      <div class="admin-welcome">
+        <div class="admin-welcome-left">
+          <div class="admin-welcome-ico" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8"  y1="2" x2="8"  y2="6"/>
+              <line x1="3"  y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <div class="admin-welcome-title">Painel do organizador</div>
+            <div class="admin-welcome-sub">Crie sessões, acompanhe respostas e confirme o melhor horário.</div>
+          </div>
+        </div>
+        <div class="admin-live-pill">
+          <span class="admin-live-dot"></span>
+          Tempo real
+        </div>
+      </div>
+
       <!-- ── Dados legados ── -->
       <div id="legacy-banner" class="legacy-banner" style="display:none;" role="status">
         <div class="legacy-icon" aria-hidden="true">
@@ -773,10 +1272,22 @@
       <div id="session-manager">
 
         <div class="card" id="session-creator-card">
-          <div class="card-title">Nova sessão de disponibilidade</div>
-          <p class="hint" style="margin-bottom:.9rem;">
-            Defina o nome da reunião, gere o link e compartilhe com os participantes.
-          </p>
+          <div class="admin-create-top">
+            <div class="admin-create-ico" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8"  y1="2" x2="8"  y2="6"/>
+                <line x1="12" y1="14" x2="12" y2="18"/>
+                <line x1="10" y1="16" x2="14" y2="16"/>
+              </svg>
+            </div>
+            <div>
+              <div class="card-title">Nova sessão</div>
+              <p class="hint">Dê um nome, gere o link e compartilhe.</p>
+            </div>
+          </div>
           <div class="form-group" style="margin-bottom:.75rem;">
             <label class="form-label" for="session-title-input">Nome da reunião</label>
             <input type="text" id="session-title-input" class="form-input"

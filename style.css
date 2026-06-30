@@ -1020,6 +1020,10 @@ body::before {
   --destructive: #DC2626;
 }
 
+/* section-eyebrow e role-badge organizer: #1BA890 em branco = 2.4:1, falha 4.5:1 */
+[data-theme="light"] .section-eyebrow { color: #0C6B58; }
+[data-theme="light"] .role-card.organizer .role-badge { color: #0C6B58; }
+
 /* Background claro — neutro limpo */
 [data-theme="light"] body {
   background-color: #F6F7F2;
