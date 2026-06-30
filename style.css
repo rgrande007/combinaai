@@ -1046,3 +1046,38 @@ body {
 
 /* Rótulo */
 [data-theme="light"] .section-label { color: #8FB0AA; }
+
+/* =============================================
+   Lista de sessões
+   ============================================= */
+.session-list-item {
+  display: flex;
+  flex-direction: column;
+  padding: .65rem .85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background var(--t), border-color var(--t);
+  margin-bottom: .45rem;
+}
+.session-list-item:last-child { margin-bottom: 0; }
+.session-list-item:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+.session-list-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: .9rem;
+  color: var(--text);
+}
+
+[data-theme="light"] .session-list-item {
+  background: #EDF4F2;
+  border-color: rgba(15,46,42,0.1);
+}
+[data-theme="light"] .session-list-item:hover {
+  background: rgba(27,168,144,0.1);
+  border-color: #1BA890;
+}

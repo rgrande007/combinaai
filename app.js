@@ -9,9 +9,20 @@ var DAY_LABELS = {
   'sexta':   'Sexta'
 };
 
+var DAY_LABELS_FULL_P = {
+  segunda: 'Segunda-feira', terca: 'Terça-feira', quarta: 'Quarta-feira',
+  quinta:  'Quinta-feira',  sexta: 'Sexta-feira'
+};
+
 var MORNING_TIMES   = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00'];
 var AFTERNOON_TIMES = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'];
 var ALL_TIMES       = MORNING_TIMES.concat(AFTERNOON_TIMES);
+
+// === Sessão ===
+var SESSION_ID = null;
+try {
+  SESSION_ID = new URLSearchParams(window.location.search).get('sessao') || null;
+} catch(e) {}
 
 // === Estado ===
 var selectedSlots = new Set();
@@ -67,7 +78,14 @@ function showAppContent(user) {
   }
   nameEl.textContent = user.displayName || user.email;
 
-  // Pré-preenche nome e email da conta Google
+  // Sem sessão: mostra aviso e oculta o formulário
+  if (!SESSION_ID) {
+    document.getElementById('no-session-card').style.display = 'block';
+    document.getElementById('form-section').style.display = 'none';
+    return;
+  }
+
+  // Pré-preenche nome
   var nameInput = document.getElementById('name-input');
   var savedName = '';
   try { savedName = localStorage.getItem('avail_name') || ''; } catch(e) {}
@@ -76,9 +94,12 @@ function showAppContent(user) {
   var emailDisplay = document.getElementById('email-display');
   if (emailDisplay) emailDisplay.value = user.email;
 
+  loadSessionInfo();
   buildGrid();
   updateSelectedCount();
   loadPreviousSelection(user);
+  listenForConfirmedSlot();
+  loadRespondents();
 }
 
 function showAuthOverlay() {
@@ -100,13 +121,67 @@ function resetGoogleBtn() {
     'Entrar com o Google';
 }
 
-// === Carrega seleção anterior (pela conta Google) ===
+// === Carrega título da sessão ===
+function loadSessionInfo() {
+  db.collection('sessions').doc(SESSION_ID).get().then(function(doc) {
+    if (!doc.exists) return;
+    var title = doc.data().title || '';
+    if (!title) return;
+    document.getElementById('page-title').textContent = title;
+    document.getElementById('page-subtitle').textContent = 'Marque os horários em que você está disponível';
+    document.title = title + ' — Disponibilidade';
+  }).catch(function() {});
+}
+
+// === Listener: horário confirmado (no doc da sessão) ===
+function listenForConfirmedSlot() {
+  if (!SESSION_ID) return function(){};
+  return db.collection('sessions').doc(SESSION_ID).onSnapshot(function(doc) {
+    var banner = document.getElementById('confirmed-banner');
+    var text   = document.getElementById('confirmed-slot-text');
+    if (doc.exists && doc.data().confirmed) {
+      var c = doc.data().confirmed;
+      text.textContent = (DAY_LABELS_FULL_P[c.day] || c.day) + ', ' + c.time;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }, function() {});
+}
+
+// === Listener: quem já respondeu (subcoleção da sessão) ===
+function loadRespondents() {
+  if (!SESSION_ID) return function(){};
+  return db.collection('sessions').doc(SESSION_ID)
+    .collection('responses').onSnapshot(function(snapshot) {
+      var respondents = snapshot.docs
+        .map(function(doc) { return doc.data(); })
+        .filter(function(d) { return d.name; })
+        .sort(function(a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+
+      var section = document.getElementById('respondents-section');
+      var listEl  = document.getElementById('respondents-list');
+      if (respondents.length === 0) { section.style.display = 'none'; return; }
+
+      section.style.display = 'block';
+      listEl.innerHTML = '';
+      respondents.forEach(function(r) {
+        var chip = document.createElement('div');
+        chip.className   = 'participant-chip';
+        chip.textContent = r.name;
+        listEl.appendChild(chip);
+      });
+    }, function() {});
+}
+
+// === Carrega seleção anterior (pelo e-mail como doc ID) ===
 async function loadPreviousSelection(user) {
+  if (!SESSION_ID) return;
   try {
-    var snapshot = await db.collection('availability')
-      .where('email', '==', user.email).get();
-    if (!snapshot.empty) {
-      var data = snapshot.docs[0].data();
+    var doc = await db.collection('sessions').doc(SESSION_ID)
+      .collection('responses').doc(user.email).get();
+    if (doc.exists) {
+      var data = doc.data();
       if (data.slots && data.slots.length > 0) {
         data.slots.forEach(function(slotId) {
           selectedSlots.add(slotId);
@@ -114,7 +189,6 @@ async function loadPreviousSelection(user) {
           if (el) el.classList.add('selected');
         });
         updateSelectedCount();
-        // Usa o nome salvo anteriormente
         if (data.name) {
           var nameInput = document.getElementById('name-input');
           try {
@@ -137,17 +211,15 @@ var selectedCountEl = document.getElementById('selected-count');
 
 // === Construção da grade ===
 function buildGrid() {
-  var gridHead = document.getElementById('grid-head');
-  var gridBody = document.getElementById('grid-body');
+  var gridHead  = document.getElementById('grid-head');
+  var gridBody  = document.getElementById('grid-body');
   var gridTable = document.getElementById('grid-table');
 
-  // Limpa caso chamado novamente
   gridHead.innerHTML = '';
   gridBody.innerHTML = '';
 
-  // Cabeçalho
   var headerRow = document.createElement('tr');
-  var emptyTh = document.createElement('th');
+  var emptyTh   = document.createElement('th');
   headerRow.appendChild(emptyTh);
   DAYS.forEach(function(day) {
     var th = document.createElement('th');
@@ -156,13 +228,11 @@ function buildGrid() {
   });
   gridHead.appendChild(headerRow);
 
-  // Linhas
   appendSectionRow('Manhã', gridBody);
   MORNING_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
   appendSectionRow('Tarde', gridBody);
   AFTERNOON_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
 
-  // Eventos de interação
   gridTable.addEventListener('mousedown', onMouseDown);
   gridTable.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mouseup', function() { isDragging = false; });
@@ -184,14 +254,14 @@ function appendSectionRow(label, gridBody) {
 function buildTimeRow(time) {
   var tr = document.createElement('tr');
   var timeTd = document.createElement('td');
-  timeTd.className = 'time-label';
+  timeTd.className   = 'time-label';
   timeTd.textContent = time;
   tr.appendChild(timeTd);
   DAYS.forEach(function(day) {
-    var td = document.createElement('td');
+    var td    = document.createElement('td');
     td.className = 'slot-cell';
     var inner = document.createElement('div');
-    inner.className = 'slot-cell-inner';
+    inner.className    = 'slot-cell-inner';
     inner.dataset.slot = day + '_' + time;
     td.appendChild(inner);
     tr.appendChild(td);
@@ -269,12 +339,17 @@ clearBtn.addEventListener('click', function() {
   updateSelectedCount();
 });
 
-// === Salvar no Firestore ===
+// === Salvar no Firestore (subcoleção da sessão) ===
 saveBtn.addEventListener('click', saveAvailability);
 
 async function saveAvailability() {
   if (!currentUser) {
     showMessage('Faça login antes de salvar.', 'error');
+    return;
+  }
+
+  if (!SESSION_ID) {
+    showMessage('Nenhuma sessão ativa. Acesse pelo link fornecido pelo organizador.', 'error');
     return;
   }
 
@@ -308,15 +383,9 @@ async function saveAvailability() {
       submittedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    // Usa e-mail como chave de deduplicação (mais confiável que o nome)
-    var snapshot = await db.collection('availability')
-      .where('email', '==', email).get();
-
-    if (!snapshot.empty) {
-      await snapshot.docs[0].ref.update(data);
-    } else {
-      await db.collection('availability').add(data);
-    }
+    // Usa e-mail como chave de deduplicação (doc ID)
+    await db.collection('sessions').doc(SESSION_ID)
+      .collection('responses').doc(email).set(data);
 
     try { localStorage.setItem('avail_name', name); } catch(e) {}
     showMessage('Disponibilidade registrada com sucesso!', 'success');

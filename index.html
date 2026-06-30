@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Previne flash de tema errado antes do CSS carregar -->
   <script>
     (function(){
       var t;
@@ -73,8 +72,8 @@
             <line x1="3"  y1="10" x2="21" y2="10"/>
           </svg>
           <div>
-            <h1>Disponibilidade de Horários</h1>
-            <p>Marque os horários em que você está disponível</p>
+            <h1 id="page-title">Disponibilidade de Horários</h1>
+            <p id="page-subtitle">Marque os horários em que você está disponível</p>
           </div>
         </div>
         <div class="auth-user-info">
@@ -88,81 +87,125 @@
 
     <main class="main-container">
 
-      <!-- Identificação -->
-      <div class="card">
-        <div class="card-title">Identificação</div>
-        <div class="form-group">
-          <label class="form-label" for="name-input">
-            Seu nome <span style="color:var(--destructive)" aria-hidden="true">*</span>
-          </label>
-          <input
-            type="text"
-            id="name-input"
-            class="form-input"
-            placeholder="Ex: Ana Silva"
-            autocomplete="name"
-            maxlength="80"
-            required
-            aria-required="true"
-            aria-describedby="name-hint"
-          />
-          <p class="hint" id="name-hint">
-            Preenchido automaticamente pela sua conta Google. Edite se quiser usar outro nome.
+      <!-- Sem sessão ativa -->
+      <div id="no-session-card" class="card" style="display:none;" role="alert">
+        <div style="text-align:center;padding:1.5rem 1rem;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+               style="color:var(--text-muted);margin-bottom:1rem;" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:1.05rem;margin-bottom:.5rem;">
+            Nenhuma sessão ativa
+          </div>
+          <p class="hint">
+            Peça ao organizador o link correto com a sessão de disponibilidade.
           </p>
         </div>
-        <div class="form-group" style="margin-top:.75rem;">
-          <label class="form-label" for="email-display">Email</label>
-          <input
-            type="email"
-            id="email-display"
-            class="form-input"
-            readonly
-            style="background:var(--primary-light);color:var(--text-muted);cursor:default;"
-            aria-label="Email da conta Google utilizada"
-          />
-          <p class="hint">Conta Google usada para identificação — não pode ser alterado.</p>
-        </div>
       </div>
 
-      <!-- Grade de horários -->
-      <div class="card">
-        <div class="card-title">Selecione os horários disponíveis</div>
-        <p class="hint" style="margin-bottom:.9rem;">
-          Clique para selecionar ou desmarcar. Clique e arraste para marcar vários de uma vez.
-        </p>
-        <div class="grid-wrapper" role="group" aria-label="Grade de disponibilidade de horários">
-          <table class="availability-grid" id="grid-table">
-            <thead id="grid-head"></thead>
-            <tbody id="grid-body"></tbody>
-          </table>
+      <!-- Seção principal do formulário -->
+      <div id="form-section">
+
+        <!-- Banner: reunião confirmada -->
+        <div id="confirmed-banner" class="card" style="display:none;border-left:3px solid var(--violet)!important;" role="status" aria-live="polite">
+          <div style="display:flex;align-items:center;gap:.75rem;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet);flex-shrink:0;" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <div>
+              <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--violet);margin-bottom:.2rem;">Reunião Confirmada</div>
+              <div id="confirmed-slot-text" style="font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--text);"></div>
+            </div>
+          </div>
         </div>
-        <p id="selected-count" class="hint" style="margin-top:.7rem;" aria-live="polite"></p>
-      </div>
 
-      <!-- Ações -->
-      <div class="card">
-        <button
-          class="btn btn-primary"
-          id="save-btn"
-          style="width:100%;padding:.9rem 1.25rem;font-size:1rem;"
-          aria-label="Salvar minha disponibilidade de horários"
-        >
-          Salvar disponibilidade
-        </button>
+        <!-- Participantes que já responderam -->
+        <div id="respondents-section" class="card" style="display:none;">
+          <div class="card-title" style="margin-bottom:.5rem;">Participantes que já responderam</div>
+          <div id="respondents-list" class="participant-list" aria-live="polite"></div>
+        </div>
 
-        <div id="message" class="message" role="status" aria-live="polite"></div>
+        <!-- Identificação -->
+        <div class="card">
+          <div class="card-title">Identificação</div>
+          <div class="form-group">
+            <label class="form-label" for="name-input">
+              Seu nome <span style="color:var(--destructive)" aria-hidden="true">*</span>
+            </label>
+            <input
+              type="text"
+              id="name-input"
+              class="form-input"
+              placeholder="Ex: Ana Silva"
+              autocomplete="name"
+              maxlength="80"
+              required
+              aria-required="true"
+              aria-describedby="name-hint"
+            />
+            <p class="hint" id="name-hint">
+              Preenchido automaticamente pela sua conta Google. Edite se quiser usar outro nome.
+            </p>
+          </div>
+          <div class="form-group" style="margin-top:.75rem;">
+            <label class="form-label" for="email-display">Email</label>
+            <input
+              type="email"
+              id="email-display"
+              class="form-input"
+              readonly
+              style="background:var(--primary-light);color:var(--text-muted);cursor:default;"
+              aria-label="Email da conta Google utilizada"
+            />
+            <p class="hint">Conta Google usada para identificação — não pode ser alterado.</p>
+          </div>
+        </div>
 
-        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;">
+        <!-- Grade de horários -->
+        <div class="card">
+          <div class="card-title">Selecione os horários disponíveis</div>
+          <p class="hint" style="margin-bottom:.9rem;">
+            Clique para selecionar ou desmarcar. Clique e arraste para marcar vários de uma vez.
+          </p>
+          <div class="grid-wrapper" role="group" aria-label="Grade de disponibilidade de horários">
+            <table class="availability-grid" id="grid-table">
+              <thead id="grid-head"></thead>
+              <tbody id="grid-body"></tbody>
+            </table>
+          </div>
+          <p id="selected-count" class="hint" style="margin-top:.7rem;" aria-live="polite"></p>
+        </div>
+
+        <!-- Ações -->
+        <div class="card">
           <button
-            class="btn btn-secondary"
-            id="clear-btn"
-            style="font-size:.8rem;padding:.4rem .9rem;"
-            aria-label="Limpar todos os horários selecionados"
+            class="btn btn-primary"
+            id="save-btn"
+            style="width:100%;padding:.9rem 1.25rem;font-size:1rem;"
+            aria-label="Salvar minha disponibilidade de horários"
           >
-            Limpar seleção
+            Salvar disponibilidade
           </button>
+
+          <div id="message" class="message" role="status" aria-live="polite"></div>
+
+          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;">
+            <button
+              class="btn btn-secondary"
+              id="clear-btn"
+              style="font-size:.8rem;padding:.4rem .9rem;"
+              aria-label="Limpar todos os horários selecionados"
+            >
+              Limpar seleção
+            </button>
+          </div>
         </div>
-      </div>
+
+      </div><!-- /form-section -->
 
     </main>
   </div>

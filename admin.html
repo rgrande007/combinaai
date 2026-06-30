@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Previne flash de tema errado antes do CSS carregar -->
   <script>
     (function(){
       var t;
@@ -37,7 +36,7 @@
 
       <h2>Painel do Administrador</h2>
       <p class="auth-desc">
-        Faça login com sua conta Google para acessar os dados de disponibilidade dos participantes.
+        Faça login com sua conta Google para criar sessões e acompanhar a disponibilidade dos participantes.
       </p>
 
       <button class="btn-google" id="google-signin-btn" aria-label="Fazer login com conta Google">
@@ -75,7 +74,7 @@
           </svg>
           <div>
             <h1>Painel do Administrador</h1>
-            <p>Disponibilidade dos participantes · atualização em tempo real</p>
+            <p>Crie sessões e acompanhe a disponibilidade em tempo real</p>
           </div>
         </div>
 
@@ -93,78 +92,161 @@
 
     <main class="main-container">
 
-      <!-- ① RECOMENDAÇÃO -->
-      <div class="card rec-partial" id="rec-card">
-        <div class="card-title" id="rec-title">Recomendação de Horário</div>
-        <p class="rec-subtitle" id="rec-subtitle">Aguardando respostas dos participantes.</p>
-        <div id="rec-content">
-          <div class="rec-empty hint">
-            Assim que os participantes enviarem suas disponibilidades,<br>
-            a melhor opção de horário aparecerá aqui.
-          </div>
-        </div>
-      </div>
+      <!-- ═══════════════════════════════════════════
+           GERENCIADOR DE SESSÕES (padrão)
+      ═══════════════════════════════════════════ -->
+      <div id="session-manager">
 
-      <!-- ② RESUMO -->
-      <div class="card">
-        <div class="card-title">Participantes</div>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number" id="stat-total">0</div>
-            <div class="stat-label">Responderam</div>
+        <!-- Criar nova sessão -->
+        <div class="card" id="session-creator-card">
+          <div class="card-title">Nova sessão de disponibilidade</div>
+          <p class="hint" style="margin-bottom:.9rem;">
+            Defina o nome da reunião, gere o link e compartilhe com os participantes.
+          </p>
+          <div class="form-group" style="margin-bottom:.75rem;">
+            <label class="form-label" for="session-title-input">Nome da reunião</label>
+            <input type="text" id="session-title-input" class="form-input"
+                   placeholder="Ex: Reunião de alinhamento Q3"
+                   maxlength="100" autocomplete="off" />
           </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-slots">40</div>
-            <div class="stat-label">Horários possíveis</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-best">—</div>
-            <div class="stat-label">Melhor cobertura</div>
-          </div>
-        </div>
-        <div class="section-label">Nomes registrados</div>
-        <div class="participant-list" id="participant-list" aria-live="polite">
-          <p class="hint">Nenhuma resposta ainda.</p>
-        </div>
-      </div>
-
-      <!-- ③ TABELA COMPLETA -->
-      <div class="card">
-        <div class="card-title">Tabela Completa de Disponibilidade</div>
-        <p class="hint" style="margin-bottom:.75rem;">
-          Passe o mouse sobre uma célula para ver os nomes disponíveis.
-        </p>
-        <div class="grid-wrapper">
-          <table class="availability-grid" id="admin-grid-table"
-                 aria-label="Tabela de disponibilidade por dia e horário">
-            <thead id="admin-grid-head"></thead>
-            <tbody id="admin-grid-body"></tbody>
-          </table>
-        </div>
-        <div class="legend" id="legend" aria-label="Legenda de cores"></div>
-      </div>
-
-      <!-- ④ AÇÕES -->
-      <div class="card">
-        <div class="card-title">Ações</div>
-        <div class="actions-bar">
-          <button class="btn btn-secondary" id="copy-btn"
-                  aria-label="Copiar recomendação de horário">
-            Copiar recomendação
-          </button>
-          <button class="btn btn-secondary" id="export-btn"
-                  aria-label="Exportar todas as respostas em CSV">
-            Exportar CSV
-          </button>
-          <button class="btn btn-danger" id="clear-all-btn"
-                  aria-label="Apagar permanentemente todas as respostas">
-            Limpar todas as respostas
+          <button class="btn btn-primary" id="create-session-btn"
+                  style="width:100%;padding:.85rem 1.25rem;font-size:1rem;"
+                  aria-label="Criar sessão e gerar link de convite">
+            Criar sessão e gerar link
           </button>
         </div>
-        <p class="hint" style="margin-top:.65rem;font-size:.75rem;">
-          "Limpar todas as respostas" é permanente e irreversível.
-        </p>
+
+        <!-- Lista de sessões anteriores -->
+        <div class="card" id="session-list-card" style="display:none;">
+          <div class="card-title">Sessões anteriores</div>
+          <div id="session-list-container"></div>
+        </div>
+
       </div>
+
+      <!-- ═══════════════════════════════════════════
+           MONITOR DE SESSÃO (aparece ao selecionar)
+      ═══════════════════════════════════════════ -->
+      <div id="session-monitor-view" style="display:none;">
+
+        <!-- Cabeçalho da sessão ativa -->
+        <div class="card" style="border-left:3px solid var(--primary)!important;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+            <div style="min-width:0;flex:1;">
+              <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--primary);margin-bottom:.25rem;">Sessão ativa</div>
+              <div id="session-title-display" style="font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:var(--text);"></div>
+              <div id="session-link-display" style="font-size:.7rem;color:var(--text-muted);margin-top:.3rem;word-break:break-all;"></div>
+            </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;flex-shrink:0;align-items:flex-start;">
+              <button class="btn btn-primary" id="copy-invite-session-btn"
+                      style="font-size:.78rem;padding:.35rem .8rem;"
+                      aria-label="Copiar link de convite para participantes">
+                Copiar link
+              </button>
+              <button class="btn btn-secondary" id="back-to-sessions-btn"
+                      style="font-size:.78rem;padding:.35rem .8rem;"
+                      aria-label="Voltar à lista de sessões">
+                ← Sessões
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BANNER: horário confirmado -->
+        <div id="confirmed-slot-admin" class="card" style="display:none;border-left:3px solid var(--violet)!important;" role="status" aria-live="polite">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet);flex-shrink:0;" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <div>
+                <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--violet);margin-bottom:.2rem;">Horário Confirmado</div>
+                <div id="confirmed-slot-admin-text" style="font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--text);"></div>
+              </div>
+            </div>
+            <button class="btn btn-secondary" id="clear-confirmed-btn"
+                    style="font-size:.76rem;padding:.3rem .75rem;"
+                    aria-label="Remover confirmação de horário">
+              Limpar confirmação
+            </button>
+          </div>
+        </div>
+
+        <!-- ① RECOMENDAÇÃO -->
+        <div class="card rec-partial" id="rec-card">
+          <div class="card-title" id="rec-title">Recomendação de Horário</div>
+          <p class="rec-subtitle" id="rec-subtitle">Aguardando respostas dos participantes.</p>
+          <div id="rec-content">
+            <div class="rec-empty hint">
+              Assim que os participantes enviarem suas disponibilidades,<br>
+              a melhor opção de horário aparecerá aqui.
+            </div>
+          </div>
+        </div>
+
+        <!-- ② RESUMO -->
+        <div class="card">
+          <div class="card-title">Participantes</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number" id="stat-total">0</div>
+              <div class="stat-label">Responderam</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="stat-slots">—</div>
+              <div class="stat-label">Em comum</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="stat-best">—</div>
+              <div class="stat-label">Melhor horário</div>
+            </div>
+          </div>
+          <div class="section-label">Nomes registrados</div>
+          <div class="participant-list" id="participant-list" aria-live="polite">
+            <p class="hint">Nenhuma resposta ainda.</p>
+          </div>
+        </div>
+
+        <!-- ③ TABELA COMPLETA -->
+        <div class="card">
+          <div class="card-title">Tabela Completa de Disponibilidade</div>
+          <p class="hint" style="margin-bottom:.75rem;">
+            Passe o mouse sobre uma célula para ver os nomes disponíveis.
+          </p>
+          <div class="grid-wrapper">
+            <table class="availability-grid" id="admin-grid-table"
+                   aria-label="Tabela de disponibilidade por dia e horário">
+              <thead id="admin-grid-head"></thead>
+              <tbody id="admin-grid-body"></tbody>
+            </table>
+          </div>
+          <div class="legend" id="legend" aria-label="Legenda de cores"></div>
+        </div>
+
+        <!-- ④ AÇÕES -->
+        <div class="card">
+          <div class="card-title">Ações</div>
+          <div class="actions-bar">
+            <button class="btn btn-secondary" id="copy-btn"
+                    aria-label="Copiar recomendação de horário">
+              Copiar recomendação
+            </button>
+            <button class="btn btn-secondary" id="export-btn"
+                    aria-label="Exportar todas as respostas em CSV">
+              Exportar CSV
+            </button>
+            <button class="btn btn-danger" id="clear-all-btn"
+                    aria-label="Apagar permanentemente todas as respostas desta sessão">
+              Limpar respostas
+            </button>
+          </div>
+          <p class="hint" style="margin-top:.65rem;font-size:.75rem;">
+            "Limpar respostas" apaga apenas as respostas desta sessão — permanente e irreversível.
+          </p>
+        </div>
+
+      </div><!-- /session-monitor-view -->
 
     </main>
   </div>

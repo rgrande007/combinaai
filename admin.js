@@ -3,7 +3,6 @@
 //
 // ⚠️ Adicione abaixo os e-mails das contas Google que podem
 //    acessar o painel. Apenas esses e-mails serão autorizados.
-//    Suficiente para uso interno — a lista fica no código fonte.
 // ============================================================
 var ADMIN_EMAILS = [
   'rafaelgrande@usp.br'
@@ -20,7 +19,6 @@ var DAY_LABELS = {
   'sexta':   'Sexta'
 };
 
-// Forma longa para a seção de recomendação
 var DAY_LABELS_FULL = {
   'segunda': 'Segunda-feira',
   'terca':   'Terça-feira',
@@ -28,6 +26,8 @@ var DAY_LABELS_FULL = {
   'quinta':  'Quinta-feira',
   'sexta':   'Sexta-feira'
 };
+
+var DAY_ABBR = { segunda: 'Seg', terca: 'Ter', quarta: 'Qua', quinta: 'Qui', sexta: 'Sex' };
 
 var MORNING_TIMES   = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00'];
 var AFTERNOON_TIMES = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'];
@@ -40,22 +40,27 @@ var googleBtn    = document.getElementById('google-signin-btn');
 var authError    = document.getElementById('auth-error');
 var signoutBtn   = document.getElementById('signout-btn');
 
-// === Autenticação Google =====================================
+// === Estado global ===
+var currentResponses      = [];
+var currentSessionId      = null;
+var firestoreUnsubscribe  = null;  // listener de respostas da sessão
+var sessionDocUnsubscribe = null;  // listener do doc da sessão (confirmed)
+var sessionListUnsubscribe = null; // listener da lista de sessões
+var adminInitialized      = false;
 
-// Monitora o estado de autenticação ao carregar a página.
-// Se o usuário já estiver logado e autorizado, abre direto.
+// ============================================================
+// AUTENTICAÇÃO
+// ============================================================
+
 firebase.auth().onAuthStateChanged(function(user) {
   if (user && isAuthorized(user.email)) {
     showAdminPanel(user);
   } else if (user) {
-    // Logado mas e-mail não autorizado
     firebase.auth().signOut();
     showAuthError('Conta não autorizada: ' + user.email);
   }
-  // Se user === null: mantém a tela de login
 });
 
-// Botão "Continuar com o Google"
 googleBtn.addEventListener('click', function() {
   googleBtn.classList.add('loading');
   googleBtn.textContent = 'Aguarde...';
@@ -69,14 +74,11 @@ googleBtn.addEventListener('click', function() {
         showAdminPanel(result.user);
       } else {
         firebase.auth().signOut();
-        showAuthError(
-          'A conta ' + email + ' não tem permissão de administrador.'
-        );
+        showAuthError('A conta ' + email + ' não tem permissão de administrador.');
         resetGoogleBtn();
       }
     })
     .catch(function(err) {
-      // Popup fechado pelo usuário = não é erro real
       if (err.code !== 'auth/popup-closed-by-user' &&
           err.code !== 'auth/cancelled-popup-request') {
         showAuthError('Erro ao fazer login. Tente novamente.');
@@ -86,14 +88,19 @@ googleBtn.addEventListener('click', function() {
     });
 });
 
-// Botão "Sair"
 signoutBtn.addEventListener('click', function() {
+  cleanupListeners();
   firebase.auth().signOut().then(function() {
     adminContent.classList.remove('visible');
     authOverlay.style.display = 'flex';
     resetGoogleBtn();
     authError.classList.remove('show');
-    if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
+    adminInitialized = false;
+    // Reset para a view de sessões
+    document.getElementById('session-monitor-view').style.display = 'none';
+    document.getElementById('session-manager').style.display = 'block';
+    document.getElementById('session-list-card').style.display = 'none';
+    document.getElementById('session-list-container').innerHTML = '';
   });
 });
 
@@ -106,7 +113,6 @@ function showAdminPanel(user) {
   authOverlay.style.display = 'none';
   adminContent.classList.add('visible');
 
-  // Exibe avatar e nome no cabeçalho
   var avatarEl = document.getElementById('auth-avatar');
   var nameEl   = document.getElementById('auth-display-name');
   if (user.photoURL) {
@@ -116,7 +122,7 @@ function showAdminPanel(user) {
   }
   nameEl.textContent = user.displayName || user.email;
 
-  initAdmin();
+  initAdmin(user);
 }
 
 function showAuthError(msg) {
@@ -136,9 +142,13 @@ function resetGoogleBtn() {
     'Continuar com o Google';
 }
 
-// === Estado global ===
-var currentResponses    = [];
-var firestoreUnsubscribe = null;
+function cleanupListeners() {
+  if (firestoreUnsubscribe)   { firestoreUnsubscribe();   firestoreUnsubscribe  = null; }
+  if (sessionDocUnsubscribe)  { sessionDocUnsubscribe();  sessionDocUnsubscribe = null; }
+  if (sessionListUnsubscribe) { sessionListUnsubscribe(); sessionListUnsubscribe = null; }
+  currentSessionId = null;
+  currentResponses = [];
+}
 
 // ============================================================
 // TOOLTIP DE NOMES POR HORÁRIO
@@ -160,7 +170,6 @@ function createAdminTooltip() {
 
 function showAdminTooltip(cell) {
   if (!_adminTooltip) return;
-
   var names = [];
   try { names = JSON.parse(cell.dataset.names || '[]'); } catch(e) {}
   var slotLabel = cell.dataset.slotLabel || '';
@@ -168,25 +177,18 @@ function showAdminTooltip(cell) {
   var absent    = allNames.filter(function(n) { return names.indexOf(n) === -1; });
 
   var html = '<div class="admin-tooltip-slot">' + escHtml(slotLabel) + '</div>';
-
   if (names.length > 0) {
     html += '<div class="admin-tooltip-section avail">';
     html += '<div class="admin-tooltip-label">Disponíveis (' + names.length + ')</div>';
-    names.forEach(function(n) {
-      html += '<div class="admin-tooltip-name">' + escHtml(n) + '</div>';
-    });
+    names.forEach(function(n) { html += '<div class="admin-tooltip-name">' + escHtml(n) + '</div>'; });
     html += '</div>';
   }
-
   if (absent.length > 0) {
     html += '<div class="admin-tooltip-section absent">';
     html += '<div class="admin-tooltip-label">Ausentes (' + absent.length + ')</div>';
-    absent.forEach(function(n) {
-      html += '<div class="admin-tooltip-name">' + escHtml(n) + '</div>';
-    });
+    absent.forEach(function(n) { html += '<div class="admin-tooltip-name">' + escHtml(n) + '</div>'; });
     html += '</div>';
   }
-
   if (allNames.length === 0) {
     html += '<div class="admin-tooltip-none">Sem respostas ainda</div>';
   } else if (names.length === 0) {
@@ -194,8 +196,6 @@ function showAdminTooltip(cell) {
   }
 
   _adminTooltip.innerHTML = html;
-
-  // Posiciona fora da tela para medir altura antes de exibir
   _adminTooltip.style.left = '-9999px';
   _adminTooltip.style.top  = '-9999px';
   _adminTooltip.classList.add('visible');
@@ -205,15 +205,12 @@ function showAdminTooltip(cell) {
   var rect = cell.getBoundingClientRect();
   var vw   = window.innerWidth;
   var vh   = window.innerHeight;
-
   var left = rect.right + 10;
   var top  = rect.top;
-
   if (left + tipW > vw - 12) left = rect.left - tipW - 10;
   if (left < 8) left = 8;
   if (top + tipH > vh - 12) top = vh - tipH - 12;
   if (top < 8) top = 8;
-
   _adminTooltip.style.left = left + 'px';
   _adminTooltip.style.top  = top  + 'px';
 }
@@ -230,36 +227,192 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// === Inicialização do painel ===
-function initAdmin() {
-  // Evita múltiplas inscrições (ex: re-login sem reload)
-  if (firestoreUnsubscribe) firestoreUnsubscribe();
+// ============================================================
+// INICIALIZAÇÃO DO PAINEL
+// ============================================================
+function initAdmin(user) {
   createAdminTooltip();
 
-  firestoreUnsubscribe = db.collection('availability').onSnapshot(function(snapshot) {
-    currentResponses = snapshot.docs
-      .map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); })
-      .sort(function(a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
-    renderAll(currentResponses);
-  }, function(err) { console.error('Erro:', err); });
+  if (!adminInitialized) {
+    adminInitialized = true;
 
-  document.getElementById('copy-btn').addEventListener('click', copyRecommendation);
-  document.getElementById('export-btn').addEventListener('click', exportCSV);
-  document.getElementById('clear-all-btn').addEventListener('click', clearAll);
+    // Criador de sessão
+    document.getElementById('create-session-btn').addEventListener('click', createSession);
+    document.getElementById('session-title-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') createSession();
+    });
+
+    // Monitor de sessão
+    document.getElementById('back-to-sessions-btn').addEventListener('click', backToSessions);
+    document.getElementById('copy-invite-session-btn').addEventListener('click', copyInviteLink);
+    document.getElementById('copy-btn').addEventListener('click', copyRecommendation);
+    document.getElementById('export-btn').addEventListener('click', exportCSV);
+    document.getElementById('clear-all-btn').addEventListener('click', clearAll);
+    document.getElementById('clear-confirmed-btn').addEventListener('click', clearConfirmedSlot);
+
+    // Delegação para botões "Confirmar" gerados dinamicamente
+    document.getElementById('admin-content').addEventListener('click', function(e) {
+      var btn = e.target.closest('.rec-confirm-btn');
+      if (btn) confirmSlot(btn.dataset.day, btn.dataset.time);
+    });
+  }
+
+  startSessionList(user.email);
 }
 
-// === Renderização principal — ORDER matters: resposta primeiro ===
+// ============================================================
+// GERENCIAMENTO DE SESSÕES
+// ============================================================
+
+function generateSessionId() {
+  var chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  var id = '';
+  for (var i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
+async function createSession() {
+  var titleInput = document.getElementById('session-title-input');
+  var title = titleInput.value.trim();
+  if (!title) { titleInput.focus(); return; }
+
+  var btn = document.getElementById('create-session-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Criando...';
+
+  try {
+    var sessionId  = generateSessionId();
+    var adminEmail = firebase.auth().currentUser.email;
+    await db.collection('sessions').doc(sessionId).set({
+      title:     title,
+      createdBy: adminEmail,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    titleInput.value = '';
+    selectSession(sessionId, title);
+  } catch(err) {
+    console.error('Erro ao criar sessão:', err);
+    alert('Erro ao criar sessão. Tente novamente.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Criar sessão e gerar link';
+  }
+}
+
+function selectSession(sessionId, title) {
+  currentSessionId = sessionId;
+
+  // Trocar views
+  document.getElementById('session-manager').style.display = 'none';
+  document.getElementById('session-monitor-view').style.display = 'block';
+
+  // Preencher cabeçalho da sessão
+  document.getElementById('session-title-display').textContent = title;
+  var baseUrl = window.location.href.replace(/admin\.html.*$/, '');
+  var link    = baseUrl + 'index.html?sessao=' + sessionId;
+  document.getElementById('session-link-display').textContent = link;
+
+  // Resetar estado da interface
+  document.getElementById('confirmed-slot-admin').style.display = 'none';
+  currentResponses = [];
+  renderAll([]);
+
+  // Listener: respostas da sessão
+  if (firestoreUnsubscribe) firestoreUnsubscribe();
+  firestoreUnsubscribe = db.collection('sessions').doc(sessionId)
+    .collection('responses').onSnapshot(function(snapshot) {
+      currentResponses = snapshot.docs
+        .map(function(doc) { return Object.assign({ id: doc.id }, doc.data()); })
+        .filter(function(r) { return r.name; })
+        .sort(function(a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+      renderAll(currentResponses);
+    }, function(err) { console.error('Erro respostas:', err); });
+
+  // Listener: horário confirmado (campo no doc da sessão)
+  if (sessionDocUnsubscribe) sessionDocUnsubscribe();
+  sessionDocUnsubscribe = db.collection('sessions').doc(sessionId).onSnapshot(function(doc) {
+    var banner = document.getElementById('confirmed-slot-admin');
+    var text   = document.getElementById('confirmed-slot-admin-text');
+    if (doc.exists && doc.data().confirmed) {
+      var c = doc.data().confirmed;
+      text.textContent = (DAY_LABELS_FULL[c.day] || c.day) + ', ' + c.time;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }, function(err) { console.error('Erro doc sessão:', err); });
+}
+
+function backToSessions() {
+  if (firestoreUnsubscribe)  { firestoreUnsubscribe();  firestoreUnsubscribe  = null; }
+  if (sessionDocUnsubscribe) { sessionDocUnsubscribe(); sessionDocUnsubscribe = null; }
+  currentSessionId = null;
+  currentResponses = [];
+
+  document.getElementById('session-monitor-view').style.display = 'none';
+  document.getElementById('session-manager').style.display = 'block';
+}
+
+function startSessionList(adminEmail) {
+  if (sessionListUnsubscribe) sessionListUnsubscribe();
+  sessionListUnsubscribe = db.collection('sessions')
+    .where('createdBy', '==', adminEmail)
+    .onSnapshot(function(snapshot) {
+      var sessions = snapshot.docs.map(function(d) {
+        return Object.assign({ id: d.id }, d.data());
+      }).sort(function(a, b) {
+        var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+        var tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+        return tb - ta;
+      });
+      renderSessionList(sessions);
+    }, function(err) { console.error('Erro lista sessões:', err); });
+}
+
+function renderSessionList(sessions) {
+  var card      = document.getElementById('session-list-card');
+  var container = document.getElementById('session-list-container');
+
+  if (sessions.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  container.innerHTML = '';
+  sessions.forEach(function(s) {
+    var item = document.createElement('div');
+    item.className = 'session-list-item';
+    item.innerHTML =
+      '<div class="session-list-title">' + escHtml(s.title) + '</div>' +
+      '<div class="hint" style="font-size:.7rem;margin-top:.1rem;">' + formatDate(s.createdAt) + '</div>';
+    item.addEventListener('click', function() { selectSession(s.id, s.title); });
+    container.appendChild(item);
+  });
+}
+
+function formatDate(ts) {
+  if (!ts || !ts.seconds) return 'agora';
+  return new Date(ts.seconds * 1000).toLocaleDateString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+// ============================================================
+// RENDERIZAÇÃO PRINCIPAL
+// ============================================================
 function renderAll(responses) {
-  renderRecommendation(responses); // ① A resposta principal para o admin
-  renderStats(responses);          // ② Quem respondeu
+  renderRecommendation(responses);
+  renderStats(responses);
   renderParticipants(responses);
-  renderAdminGrid(responses);      // ③ Detalhes completos
+  renderAdminGrid(responses);
 }
 
 // ============================================================
 // ① RECOMENDAÇÃO DE HORÁRIO
-//    Responde: "Quando devemos marcar a reunião?"
-//    Princípio: information first, progressive disclosure.
 // ============================================================
 function renderRecommendation(responses) {
   var cardEl     = document.getElementById('rec-card');
@@ -268,10 +421,8 @@ function renderRecommendation(responses) {
   var contentEl  = document.getElementById('rec-content');
   var total      = responses.length;
 
-  // Reset card border
   cardEl.className = 'card rec-partial';
 
-  // ─── Estado vazio ───────────────────────────────────────────
   if (total === 0) {
     titleEl.textContent    = 'Recomendação de Horário';
     subtitleEl.textContent = 'Aguardando respostas dos participantes.';
@@ -283,7 +434,6 @@ function renderRecommendation(responses) {
     return;
   }
 
-  // ─── Dados ──────────────────────────────────────────────────
   var data     = getSlotData(responses);
   var maxCount = data.maxCount;
   var isAll    = (maxCount === total);
@@ -294,7 +444,6 @@ function renderRecommendation(responses) {
     return;
   }
 
-  // ─── Classificar slots com disponibilidade ──────────────────
   var ranked = [];
   DAYS.forEach(function(day) {
     ALL_TIMES.forEach(function(time) {
@@ -309,12 +458,10 @@ function renderRecommendation(responses) {
     return dd !== 0 ? dd : ALL_TIMES.indexOf(a.time) - ALL_TIMES.indexOf(b.time);
   });
 
-  // Mostrar apenas os slots empatados no 1º lugar, máximo 3
   var topCount  = ranked.filter(function(s) { return s.count === maxCount; }).length;
   var showCount = Math.min(topCount, 3);
   var topSlots  = ranked.slice(0, showCount);
 
-  // ─── Título e subtítulo ─────────────────────────────────────
   if (isAll) {
     cardEl.className    = 'card rec-unanimous';
     titleEl.textContent = 'Horário Ideal';
@@ -326,26 +473,49 @@ function renderRecommendation(responses) {
       'Melhor opção: <strong>' + maxCount + ' de ' + total + '</strong> participantes disponíveis.';
   }
 
-  // ─── Lista simplificada (dia, hora, contagem) ────────────────
   contentEl.innerHTML = '';
   var list = document.createElement('div');
   list.className = 'rec-list';
 
+  var allNames = responses.map(function(r) { return r.name; });
+
   topSlots.forEach(function(slot, i) {
-    var isAllSlot = (slot.count === total);
+    var isAllSlot   = (slot.count === total);
+    var slotKey     = slot.day + '_' + slot.time;
+    var availNames  = data.namesBySlot[slotKey] || [];
+    var absentNames = allNames.filter(function(n) { return availNames.indexOf(n) === -1; });
+
     var el = document.createElement('div');
     el.className = 'rec-slot' + (isAllSlot ? ' rec-slot-top-all' : ' rec-slot-top');
+
+    var availHtml  = availNames.length > 0
+      ? '<div class="rec-avail">✓ ' + availNames.map(escHtml).join(', ') + '</div>'
+      : '';
+    var absentHtml = absentNames.length > 0
+      ? '<div class="rec-absent"><strong>Ausentes:</strong> ' + absentNames.map(escHtml).join(', ') + '</div>'
+      : '';
+
     el.innerHTML =
       '<div class="rec-rank">' + (i + 1) + '</div>' +
       '<div class="rec-body">' +
         '<div class="rec-time">' + DAY_LABELS_FULL[slot.day] + ', ' + slot.time +
           (isAllSlot ? ' <span class="badge-all">Todos</span>' : '') +
         '</div>' +
+        availHtml +
+        absentHtml +
       '</div>' +
-      '<div class="rec-score">' +
-        '<div class="rec-score-num">' + slot.count +
-          '<span class="rec-score-den">/' + total + '</span>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">' +
+        '<div class="rec-score">' +
+          '<div class="rec-score-num">' + slot.count +
+            '<span class="rec-score-den">/' + total + '</span>' +
+          '</div>' +
         '</div>' +
+        '<button class="btn btn-secondary rec-confirm-btn" ' +
+          'data-day="' + slot.day + '" data-time="' + escHtml(slot.time) + '" ' +
+          'style="font-size:.68rem;padding:.2rem .55rem;white-space:nowrap;" ' +
+          'aria-label="Confirmar ' + escHtml(DAY_LABELS_FULL[slot.day]) + ' às ' + escHtml(slot.time) + '">' +
+          'Confirmar' +
+        '</button>' +
       '</div>';
     list.appendChild(el);
   });
@@ -367,12 +537,30 @@ function renderRecommendation(responses) {
 function renderStats(responses) {
   var total = responses.length;
   document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-slots').textContent = DAYS.length * ALL_TIMES.length;
 
-  if (total > 0) {
-    var data = getSlotData(responses);
-    var pct  = Math.round((data.maxCount / total) * 100);
-    document.getElementById('stat-best').textContent = pct + '%';
+  if (total === 0) {
+    document.getElementById('stat-slots').textContent = '—';
+    document.getElementById('stat-best').textContent  = '—';
+    return;
+  }
+
+  var data = getSlotData(responses);
+
+  var unanimous = Object.keys(data.counts).filter(function(k) {
+    return data.counts[k] === total;
+  }).length;
+  document.getElementById('stat-slots').textContent = unanimous;
+
+  var bestKey = null;
+  DAYS.forEach(function(day) {
+    ALL_TIMES.forEach(function(time) {
+      var k = day + '_' + time;
+      if (!bestKey || data.counts[k] > data.counts[bestKey]) bestKey = k;
+    });
+  });
+  if (bestKey && data.counts[bestKey] > 0) {
+    var parts = bestKey.split('_');
+    document.getElementById('stat-best').textContent = DAY_ABBR[parts[0]] + ' ' + parts[1];
   } else {
     document.getElementById('stat-best').textContent = '—';
   }
@@ -435,10 +623,9 @@ function renderAdminGrid(responses) {
   var total = responses.length;
   var data  = getSlotData(responses);
 
-  // Cabeçalho
   head.innerHTML = '';
-  var headerRow  = document.createElement('tr');
-  var emptyTh    = document.createElement('th');
+  var headerRow = document.createElement('tr');
+  var emptyTh   = document.createElement('th');
   headerRow.appendChild(emptyTh);
   DAYS.forEach(function(day) {
     var th = document.createElement('th');
@@ -447,7 +634,6 @@ function renderAdminGrid(responses) {
   });
   head.appendChild(headerRow);
 
-  // Linhas
   body.innerHTML = '';
 
   function appendSection(label, times) {
@@ -521,14 +707,53 @@ function renderLegend() {
     var div  = document.createElement('div');
     div.className = 'legend-item';
     var dot  = document.createElement('span');
-    dot.className         = 'legend-dot';
-    dot.style.background  = item.bg;
+    dot.className        = 'legend-dot';
+    dot.style.background = item.bg;
     var lbl  = document.createElement('span');
     lbl.textContent = item.label;
     div.appendChild(dot);
     div.appendChild(lbl);
     legend.appendChild(div);
   });
+}
+
+// ============================================================
+// CONFIRMAR HORÁRIO (salvo no doc da sessão)
+// ============================================================
+function confirmSlot(day, time) {
+  if (!currentSessionId) return;
+  db.collection('sessions').doc(currentSessionId).update({
+    confirmed: {
+      day:         day,
+      time:        time,
+      confirmedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }
+  }).catch(function(err) { console.error('Erro ao confirmar horário:', err); });
+}
+
+function clearConfirmedSlot() {
+  if (!currentSessionId) return;
+  if (!confirm('Remover a confirmação de horário?')) return;
+  db.collection('sessions').doc(currentSessionId).update({
+    confirmed: firebase.firestore.FieldValue.delete()
+  }).catch(function(err) { console.error('Erro ao limpar confirmação:', err); });
+}
+
+// ============================================================
+// COPIAR LINK DE CONVITE
+// ============================================================
+function copyInviteLink() {
+  if (!currentSessionId) return;
+  var baseUrl = window.location.href.replace(/admin\.html.*$/, '');
+  var url     = baseUrl + 'index.html?sessao=' + currentSessionId;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(function() { alert('Link copiado!\n' + url); })
+      .catch(function() { fallbackCopy(url); });
+  } else {
+    fallbackCopy(url);
+  }
 }
 
 // ============================================================
@@ -550,7 +775,6 @@ function copyRecommendation() {
     ? '=== Horário Ideal — todos os ' + total + ' participantes disponíveis ===\n\n'
     : '=== Recomendação de Horário (' + maxCount + '/' + total + ' disponíveis) ===\n\n';
 
-  // Top slots em ordem
   var ranked = [];
   DAYS.forEach(function(day) {
     ALL_TIMES.forEach(function(time) {
@@ -579,7 +803,6 @@ function copyRecommendation() {
   });
 
   var finalText = text.trim();
-
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(finalText)
       .then(function() { alert('Recomendação copiada para a área de transferência!'); })
@@ -597,11 +820,11 @@ function fallbackCopy(text) {
   ta.select();
   document.execCommand('copy');
   document.body.removeChild(ta);
-  alert('Recomendação copiada!');
+  alert('Copiado!\n' + (text.length > 80 ? text.substring(0, 80) + '…' : text));
 }
 
 // ============================================================
-// EXPORTAR CSV
+// EXPORTAR CSV (respostas da sessão atual)
 // ============================================================
 function exportCSV() {
   if (currentResponses.length === 0) {
@@ -614,13 +837,13 @@ function exportCSV() {
     ALL_TIMES.forEach(function(time) { allSlots.push(day + '_' + time); });
   });
 
-  var headers = ['Nome', 'Data de envio'].concat(allSlots);
+  var headers = ['Nome', 'Email', 'Data de envio'].concat(allSlots);
   var rows = currentResponses.map(function(r) {
     var date = '';
     if (r.submittedAt && r.submittedAt.seconds) {
       date = new Date(r.submittedAt.seconds * 1000).toLocaleString('pt-BR');
     }
-    return [r.name, date].concat(
+    return [r.name, r.email || r.id || '', date].concat(
       allSlots.map(function(slot) { return (r.slots || []).indexOf(slot) !== -1 ? '1' : '0'; })
     );
   });
@@ -642,12 +865,14 @@ function exportCSV() {
 }
 
 // ============================================================
-// LIMPAR TUDO
+// LIMPAR RESPOSTAS DA SESSÃO
 // ============================================================
 async function clearAll() {
-  if (!confirm('⚠️  Apagar TODAS as respostas?\n\nEsta ação não pode ser desfeita.')) return;
+  if (!currentSessionId) return;
+  if (!confirm('⚠️  Apagar TODAS as respostas desta sessão?\n\nEsta ação não pode ser desfeita.')) return;
   try {
-    var snapshot = await db.collection('availability').get();
+    var snapshot = await db.collection('sessions').doc(currentSessionId)
+      .collection('responses').get();
     if (snapshot.empty) { alert('Não há respostas para apagar.'); return; }
     var batch = db.batch();
     snapshot.docs.forEach(function(doc) { batch.delete(doc.ref); });
