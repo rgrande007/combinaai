@@ -21,23 +21,28 @@ var MOON_ICON =
   '</svg>';
 
 function initThemeToggle() {
-  var btn = document.getElementById('theme-toggle');
-  if (!btn) return;
+  // Suporta múltiplos botões de toggle (ex: home landing + painel admin)
+  var btns = document.querySelectorAll('#theme-toggle, #theme-toggle-landing');
+  if (!btns.length) return;
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('theme', theme); } catch (e) {}
-    btn.innerHTML = theme === 'dark' ? SUN_ICON : MOON_ICON;
-    btn.setAttribute('aria-label', theme === 'dark' ? 'Alternar para tema claro' : 'Alternar para tema escuro');
-    btn.setAttribute('title', theme === 'dark' ? 'Tema claro' : 'Tema escuro');
+    btns.forEach(function(b) {
+      b.innerHTML = theme === 'dark' ? SUN_ICON : MOON_ICON;
+      b.setAttribute('aria-label', theme === 'dark' ? 'Alternar para tema claro' : 'Alternar para tema escuro');
+      b.setAttribute('title', theme === 'dark' ? 'Tema claro' : 'Tema escuro');
+    });
   }
 
   var current = document.documentElement.getAttribute('data-theme') || 'dark';
   applyTheme(current);
 
-  btn.addEventListener('click', function () {
-    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    });
   });
 }
 
