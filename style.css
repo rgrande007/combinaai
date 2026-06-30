@@ -1048,6 +1048,31 @@ body {
 [data-theme="light"] .section-label { color: #8FB0AA; }
 
 /* =============================================
+   Botão WhatsApp
+   ============================================= */
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem 1rem;
+  border-radius: var(--radius-sm);
+  background: #25D366;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: .85rem;
+  border: none;
+  cursor: pointer;
+  transition: background var(--t), transform var(--t);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-whatsapp:hover {
+  background: #1ebe5d;
+  transform: translateY(-1px);
+}
+
+/* =============================================
    Lista de sessões
    ============================================= */
 .session-list-item {

@@ -245,6 +245,7 @@ function initAdmin(user) {
     // Monitor de sessão
     document.getElementById('back-to-sessions-btn').addEventListener('click', backToSessions);
     document.getElementById('copy-invite-session-btn').addEventListener('click', copyInviteLink);
+    document.getElementById('whatsapp-share-btn').addEventListener('click', shareWhatsApp);
     document.getElementById('copy-btn').addEventListener('click', copyRecommendation);
     document.getElementById('export-btn').addEventListener('click', exportCSV);
     document.getElementById('clear-all-btn').addEventListener('click', clearAll);
@@ -754,6 +755,19 @@ function copyInviteLink() {
   } else {
     fallbackCopy(url);
   }
+}
+
+// ============================================================
+// COMPARTILHAR NO WHATSAPP
+// ============================================================
+function shareWhatsApp() {
+  if (!currentSessionId) return;
+  var baseUrl = window.location.href.replace(/admin\.html.*$/, '');
+  var url     = baseUrl + 'index.html?sessao=' + currentSessionId;
+  var title   = document.getElementById('session-title-display').textContent || 'disponibilidade';
+  var msg     = 'Oi! Preciso saber sua disponibilidade para *' + title + '*.\n\n' +
+                'Acesse o link abaixo e marque os horários em que você pode:\n' + url;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 // ============================================================
