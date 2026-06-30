@@ -364,8 +364,8 @@ function selectSession(sessionId, title) {
   setTimeout(function() { animateCards(document.getElementById('session-monitor-view')); }, 40);
 
   document.getElementById('session-title-display').textContent = title;
-  var baseUrl = window.location.href.replace(/home\.html.*$/, '');
-  var link    = baseUrl + 'index.html?sessao=' + sessionId;
+  var baseUrl = window.location.origin + '/';
+  var link    = baseUrl + 'app.html?sessao=' + sessionId;
   document.getElementById('session-link-display').textContent = link;
 
   document.getElementById('confirmed-slot-admin').style.display = 'none';
@@ -797,8 +797,8 @@ function shareWhatsApp() {
 }
 
 function buildInviteUrl() {
-  var base = window.location.href.replace(/home\.html.*$/, '');
-  return base + 'index.html?sessao=' + currentSessionId;
+  var base = window.location.origin + '/';
+  return base + 'app.html?sessao=' + currentSessionId;
 }
 
 function copyRecommendation() {
