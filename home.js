@@ -34,11 +34,9 @@ var adminPanelEl  = document.getElementById('admin-panel');
 var notAuthEl     = document.getElementById('not-authorized');
 
 function showState(state) {
-  // Remove active de todos
   [landingEl, notAuthEl].forEach(function(el) { el.classList.remove('active'); });
   adminPanelEl.classList.remove('visible');
 
-  // Esconde loading com fade
   authLoading.classList.add('hide');
   setTimeout(function() { authLoading.style.display = 'none'; }, 300);
 
@@ -106,17 +104,14 @@ function triggerGoogleLogin(btn) {
     });
 }
 
-// Botões de login na landing
 ['hero-login-btn', 'header-login-btn', 'roles-login-btn'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) el.addEventListener('click', function() { triggerGoogleLogin(this); });
 });
 
-// Sair (painel admin)
 document.getElementById('signout-btn').addEventListener('click', function() {
   doSignout();
 });
-// Sair (não autorizado)
 document.getElementById('signout-denied-btn').addEventListener('click', function() {
   doSignout();
 });
@@ -125,7 +120,6 @@ function doSignout() {
   cleanupListeners();
   adminInitialized = false;
   firebase.auth().signOut();
-  // Reset views
   document.getElementById('session-monitor-view').style.display = 'none';
   document.getElementById('session-manager').style.display = 'block';
   document.getElementById('session-list-card').style.display = 'none';
@@ -156,6 +150,7 @@ function cleanupListeners() {
 // TOOLTIP
 // ============================================================
 var _adminTooltip = null;
+var _touchTooltipTimer = null;
 
 function createAdminTooltip() {
   if (document.getElementById('admin-tooltip')) {
@@ -167,6 +162,14 @@ function createAdminTooltip() {
   tip.setAttribute('aria-hidden', 'true');
   document.body.appendChild(tip);
   _adminTooltip = tip;
+
+  // Esconde ao tocar fora de uma célula da grid
+  document.addEventListener('touchstart', function(e) {
+    if (!e.target.closest('.admin-slot-inner')) {
+      clearTimeout(_touchTooltipTimer);
+      hideAdminTooltip();
+    }
+  }, { passive: true });
 }
 
 function showAdminTooltip(cell) {
@@ -253,7 +256,7 @@ function initAdmin(user) {
 }
 
 // ============================================================
-// DADOS LEGADOS (coleção "availability" da arquitetura anterior)
+// DADOS LEGADOS
 // ============================================================
 async function checkLegacyData() {
   try {
@@ -264,7 +267,7 @@ async function checkLegacyData() {
       'Há ' + count + (count === 3 ? '+' : '') + ' resposta(s) de uma votação anterior sem sessão. ' +
       'Importe-as para continuar de onde parou.';
     document.getElementById('legacy-banner').style.display = 'flex';
-  } catch(e) { /* sem permissão ou sem dados */ }
+  } catch(e) {}
 }
 
 async function importLegacyData() {
@@ -275,8 +278,10 @@ async function importLegacyData() {
   try {
     var snap = await db.collection('availability').get();
     if (snap.empty) {
-      alert('Nenhum dado legado encontrado.');
+      showToast('Nenhum dado legado encontrado.', 'info');
       document.getElementById('legacy-banner').style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = 'Importar como nova sessão';
       return;
     }
 
@@ -294,7 +299,6 @@ async function importLegacyData() {
     snap.docs.forEach(function(doc) {
       var data  = doc.data();
       var email = data.email || doc.id;
-      // Usa e-mail como doc ID para deduplicação
       var ref = db.collection('sessions').doc(sessionId)
                   .collection('responses').doc(email);
       batch.set(ref, {
@@ -312,7 +316,7 @@ async function importLegacyData() {
 
   } catch(err) {
     console.error('Erro ao importar:', err);
-    alert('Erro ao importar. Tente novamente.');
+    showToast('Erro ao importar. Tente novamente.', 'error');
     btn.disabled = false;
     btn.textContent = 'Importar como nova sessão';
   }
@@ -349,10 +353,85 @@ async function createSession() {
     selectSession(sessionId, title);
   } catch(err) {
     console.error('Erro ao criar sessão:', err);
-    alert('Erro ao criar sessão. Tente novamente.');
+    showToast('Erro ao criar sessão. Tente novamente.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Criar sessão e gerar link';
+  }
+}
+
+async function renameSession(id, oldTitle) {
+  var newTitle = await showPrompt({
+    title: 'Renomear sessão',
+    message: 'Informe o novo nome para esta sessão.',
+    value: oldTitle,
+    placeholder: 'Ex: Reunião de alinhamento Q3',
+    confirmText: 'Salvar',
+    cancelText: 'Cancelar'
+  });
+  if (!newTitle || newTitle === oldTitle) return;
+
+  try {
+    await db.collection('sessions').doc(id).update({ title: newTitle });
+    showToast('Sessão renomeada com sucesso.', 'success');
+  } catch(err) {
+    console.error('Erro ao renomear:', err);
+    showToast('Erro ao renomear a sessão.', 'error');
+  }
+}
+
+async function deleteSession(id, title) {
+  var ok = await showConfirm({
+    title: 'Excluir sessão?',
+    message: 'A sessão "<strong>' + escHtml(title) + '</strong>" e todas as suas respostas serão excluídas permanentemente.',
+    confirmText: 'Excluir',
+    cancelText: 'Cancelar',
+    danger: true
+  });
+  if (!ok) return;
+
+  try {
+    var snap = await db.collection('sessions').doc(id).collection('responses').get();
+    var batch = db.batch();
+    snap.docs.forEach(function(d) { batch.delete(d.ref); });
+    batch.delete(db.collection('sessions').doc(id));
+    await batch.commit();
+    showToast('Sessão excluída.', 'success');
+  } catch(err) {
+    console.error('Erro ao excluir sessão:', err);
+    showToast('Erro ao excluir a sessão.', 'error');
+  }
+}
+
+async function deleteResponse(sessionId, responseId, name) {
+  var ok = await showConfirm({
+    title: 'Remover participante?',
+    message: 'A resposta de "<strong>' + escHtml(name) + '</strong>" será removida desta sessão.',
+    confirmText: 'Remover',
+    cancelText: 'Cancelar',
+    danger: true
+  });
+  if (!ok) return;
+
+  try {
+    await db.collection('sessions').doc(sessionId)
+      .collection('responses').doc(responseId).delete();
+    showToast('Resposta de ' + name + ' removida.', 'success');
+  } catch(err) {
+    console.error('Erro ao remover resposta:', err);
+    showToast('Erro ao remover a resposta.', 'error');
+  }
+}
+
+function copySessionLink(sessionId) {
+  var base = window.location.origin + '/';
+  var url  = base + 'app.html?sessao=' + sessionId;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(function() { showToast('Link copiado!', 'copy'); })
+      .catch(function() { _fallbackCopyText(url); });
+  } else {
+    _fallbackCopyText(url);
   }
 }
 
@@ -410,6 +489,15 @@ function backToSessions() {
 }
 
 function startSessionList(adminEmail) {
+  // Mostra skeleton enquanto carrega
+  var card      = document.getElementById('session-list-card');
+  var container = document.getElementById('session-list-container');
+  card.style.display = 'block';
+  container.innerHTML =
+    '<div class="session-skeleton"></div>' +
+    '<div class="session-skeleton"></div>' +
+    '<div class="session-skeleton"></div>';
+
   if (sessionListUnsubscribe) sessionListUnsubscribe();
   sessionListUnsubscribe = db.collection('sessions')
     .where('createdBy', '==', adminEmail)
@@ -435,19 +523,49 @@ function renderSessionList(sessions) {
   sessions.forEach(function(s) {
     var item = document.createElement('div');
     item.className = 'session-list-item';
-    item.setAttribute('role', 'button');
-    item.setAttribute('tabindex', '0');
+
+    var isConfirmed = s.confirmed && s.confirmed.day;
+    var confirmedBadge = isConfirmed
+      ? '<span class="session-status-badge session-badge-confirmed">✓ Confirmada</span>'
+      : '';
+
     item.innerHTML =
       '<div class="session-list-dot" aria-hidden="true"></div>' +
-      '<div class="session-list-info">' +
-        '<div class="session-list-title">' + escHtml(s.title) + '</div>' +
-        '<div class="session-list-meta">' + formatDate(s.createdAt) + '</div>' +
-      '</div>' +
-      '<svg class="session-list-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
+      '<button class="session-list-info-btn" aria-label="Abrir sessão: ' + escHtml(s.title) + '">' +
+        '<div class="session-list-info">' +
+          '<div class="session-list-title">' + escHtml(s.title) + '</div>' +
+          '<div class="session-list-meta">' + formatDate(s.createdAt) + confirmedBadge + '</div>' +
+        '</div>' +
+        '<svg class="session-list-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
+      '</button>' +
+      '<div class="session-list-actions">' +
+        '<button class="session-action-btn session-copy-btn" aria-label="Copiar link de convite" title="Copiar link">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+        '</button>' +
+        '<button class="session-action-btn session-edit-btn" aria-label="Renomear sessão" title="Renomear">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+        '</button>' +
+        '<button class="session-action-btn session-delete-btn" aria-label="Excluir sessão" title="Excluir">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+        '</button>' +
+      '</div>';
 
-    var handler = function() { selectSession(s.id, s.title); };
-    item.addEventListener('click', handler);
-    item.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') handler(); });
+    item.querySelector('.session-list-info-btn').addEventListener('click', function() {
+      selectSession(s.id, s.title);
+    });
+    item.querySelector('.session-copy-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      copySessionLink(s.id);
+    });
+    item.querySelector('.session-edit-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      renameSession(s.id, s.title);
+    });
+    item.querySelector('.session-delete-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteSession(s.id, s.title);
+    });
+
     container.appendChild(item);
   });
 }
@@ -605,8 +723,8 @@ function renderRecommendation(responses) {
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">' +
         '<div class="rec-score"><div class="rec-score-num">' + slot.count + '<span class="rec-score-den">/' + total + '</span></div></div>' +
-        '<button class="btn btn-secondary rec-confirm-btn" data-day="' + slot.day + '" data-time="' + escHtml(slot.time) + '" ' +
-          'style="font-size:.68rem;padding:.2rem .55rem;white-space:nowrap;" ' +
+        '<button class="btn btn-violet rec-confirm-btn" data-day="' + slot.day + '" data-time="' + escHtml(slot.time) + '" ' +
+          'style="font-size:.68rem;padding:.2rem .6rem;white-space:nowrap;" ' +
           'aria-label="Confirmar ' + escHtml(DAY_LABELS_FULL[slot.day]) + ' às ' + escHtml(slot.time) + '">Confirmar</button>' +
       '</div>';
     list.appendChild(el);
@@ -651,11 +769,28 @@ function renderStats(responses) {
 function renderParticipants(responses) {
   var list = document.getElementById('participant-list');
   list.innerHTML = '';
-  if (responses.length === 0) { list.innerHTML = '<p class="hint">Nenhuma resposta ainda.</p>'; return; }
+  if (responses.length === 0) {
+    list.innerHTML = '<p class="hint">Nenhuma resposta ainda.</p>';
+    return;
+  }
   responses.forEach(function(r) {
     var chip = document.createElement('div');
     chip.className = 'participant-chip';
-    chip.textContent = r.name;
+
+    var nameSpan = document.createElement('span');
+    nameSpan.textContent = r.name;
+
+    var removeBtn = document.createElement('button');
+    removeBtn.className = 'participant-remove-btn';
+    removeBtn.setAttribute('aria-label', 'Remover ' + r.name);
+    removeBtn.title = 'Remover resposta de ' + r.name;
+    removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    removeBtn.addEventListener('click', function() {
+      deleteResponse(currentSessionId, r.id, r.name);
+    });
+
+    chip.appendChild(nameSpan);
+    chip.appendChild(removeBtn);
     list.appendChild(chip);
   });
 }
@@ -686,9 +821,14 @@ function renderAdminGrid(responses) {
 
   head.innerHTML = '';
   var headerRow = document.createElement('tr');
-  headerRow.appendChild(document.createElement('th'));
+  var emptyTh = document.createElement('th');
+  emptyTh.setAttribute('scope', 'col');
+  headerRow.appendChild(emptyTh);
   DAYS.forEach(function(day) {
-    var th = document.createElement('th'); th.textContent = DAY_LABELS[day]; headerRow.appendChild(th);
+    var th = document.createElement('th');
+    th.textContent = DAY_LABELS[day];
+    th.setAttribute('scope', 'col');
+    headerRow.appendChild(th);
   });
   head.appendChild(headerRow);
   body.innerHTML = '';
@@ -710,8 +850,19 @@ function renderAdminGrid(responses) {
           : '<span class="count">' + count + '</span><span class="fraction">/' + total + '</span>';
         inner.dataset.slotLabel = DAY_LABELS[day] + ' · ' + time;
         inner.dataset.names = JSON.stringify(names);
+
+        // Mouse (desktop)
         inner.addEventListener('mouseenter', function() { showAdminTooltip(this); });
         inner.addEventListener('mouseleave', hideAdminTooltip);
+
+        // Touch (mobile) — tap para revelar, auto-esconde em 3s
+        inner.addEventListener('touchstart', function(e) {
+          clearTimeout(_touchTooltipTimer);
+          showAdminTooltip(this);
+          _touchTooltipTimer = setTimeout(hideAdminTooltip, 3000);
+          e.stopPropagation();
+        }, { passive: true });
+
         td.appendChild(inner); tr.appendChild(td);
       });
       body.appendChild(tr);
@@ -723,12 +874,10 @@ function renderAdminGrid(responses) {
 
   var allCells = body.querySelectorAll('.admin-slot-inner');
 
-  // Skeleton shimmer quando não há respostas ainda
   if (total === 0) {
     allCells.forEach(function(cell) { cell.classList.add('skeleton'); });
   }
 
-  // Stagger reveal quando há dados
   if (total > 0 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     allCells.forEach(function(cell, i) {
       cell.style.animationDelay = (i * 6) + 'ms';
@@ -749,12 +898,16 @@ function getAvailClass(count, total) {
 
 function renderLegend() {
   var legend = document.getElementById('legend'); legend.innerHTML = '';
-  [{ bg: '#064E3B', label: 'Todos' }, { bg: '#059669', label: '≥ 75%' },
-   { bg: '#84CC16', label: '≥ 50%' }, { bg: '#FDE68A', label: '≥ 25%' },
-   { bg: '#FEF9C3', label: '< 25%' }, { bg: '#F1F5F9', label: 'Nenhum' }
+  [
+    { cls: 'ld-all',  label: 'Todos'  },
+    { cls: 'ld-high', label: '≥ 75%'  },
+    { cls: 'ld-med',  label: '≥ 50%'  },
+    { cls: 'ld-low',  label: '≥ 25%'  },
+    { cls: 'ld-few',  label: '< 25%'  },
+    { cls: 'ld-none', label: 'Nenhum' }
   ].forEach(function(item) {
     var div = document.createElement('div'); div.className = 'legend-item';
-    var dot = document.createElement('span'); dot.className = 'legend-dot'; dot.style.background = item.bg;
+    var dot = document.createElement('span'); dot.className = 'legend-dot ' + item.cls;
     var lbl = document.createElement('span'); lbl.textContent = item.label;
     div.appendChild(dot); div.appendChild(lbl); legend.appendChild(div);
   });
@@ -767,12 +920,21 @@ function confirmSlot(day, time) {
   if (!currentSessionId) return;
   db.collection('sessions').doc(currentSessionId).update({
     confirmed: { day: day, time: time, confirmedAt: firebase.firestore.FieldValue.serverTimestamp() }
+  }).then(function() {
+    showToast('Horário confirmado!', 'success');
   }).catch(function(err) { console.error('Erro ao confirmar:', err); });
 }
 
-function clearConfirmedSlot() {
+async function clearConfirmedSlot() {
   if (!currentSessionId) return;
-  if (!confirm('Remover a confirmação de horário?')) return;
+  var ok = await showConfirm({
+    title: 'Remover confirmação?',
+    message: 'O horário confirmado será removido desta sessão.',
+    confirmText: 'Remover',
+    cancelText: 'Cancelar',
+    danger: false
+  });
+  if (!ok) return;
   db.collection('sessions').doc(currentSessionId).update({
     confirmed: firebase.firestore.FieldValue.delete()
   }).catch(function(err) { console.error('Erro ao limpar:', err); });
@@ -783,9 +945,9 @@ function copyInviteLink() {
   var url = buildInviteUrl();
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url)
-      .then(function() { alert('Link copiado!\n' + url); })
-      .catch(function() { fallbackCopy(url); });
-  } else { fallbackCopy(url); }
+      .then(function() { showToast('Link copiado!', 'copy'); })
+      .catch(function() { _fallbackCopyText(url); });
+  } else { _fallbackCopyText(url); }
 }
 
 function shareWhatsApp() {
@@ -802,7 +964,7 @@ function buildInviteUrl() {
 }
 
 function copyRecommendation() {
-  if (currentResponses.length === 0) { alert('Nenhuma resposta para copiar.'); return; }
+  if (currentResponses.length === 0) { showToast('Nenhuma resposta para copiar.', 'info'); return; }
   var data = getSlotData(currentResponses), total = currentResponses.length;
   var allNames = currentResponses.map(function(r) { return r.name; });
   var maxCount = data.maxCount, isAll = (maxCount === total);
@@ -837,21 +999,21 @@ function copyRecommendation() {
   var finalText = text.trim();
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(finalText)
-      .then(function() { alert('Recomendação copiada!'); })
-      .catch(function() { fallbackCopy(finalText); });
-  } else { fallbackCopy(finalText); }
+      .then(function() { showToast('Recomendação copiada!', 'copy'); })
+      .catch(function() { _fallbackCopyText(finalText); });
+  } else { _fallbackCopyText(finalText); }
 }
 
-function fallbackCopy(text) {
+function _fallbackCopyText(text) {
   var ta = document.createElement('textarea');
   ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;';
   document.body.appendChild(ta); ta.select();
   document.execCommand('copy'); document.body.removeChild(ta);
-  alert('Copiado!');
+  showToast('Copiado!', 'copy');
 }
 
 function exportCSV() {
-  if (currentResponses.length === 0) { alert('Nenhuma resposta para exportar.'); return; }
+  if (currentResponses.length === 0) { showToast('Nenhuma resposta para exportar.', 'info'); return; }
   var allSlots = [];
   DAYS.forEach(function(day) { ALL_TIMES.forEach(function(time) { allSlots.push(day + '_' + time); }); });
   var headers = ['Nome','Email','Data de envio'].concat(allSlots);
@@ -871,18 +1033,28 @@ function exportCSV() {
   a.href = url; a.download = 'disponibilidade_' + new Date().toISOString().split('T')[0] + '.csv';
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('CSV exportado!', 'success');
 }
 
 async function clearAll() {
   if (!currentSessionId) return;
-  if (!confirm('⚠️  Apagar TODAS as respostas desta sessão?\n\nEsta ação não pode ser desfeita.')) return;
+  var ok = await showConfirm({
+    title: 'Apagar todas as respostas?',
+    message: 'Todas as respostas desta sessão serão excluídas permanentemente. Esta ação não pode ser desfeita.',
+    confirmText: 'Apagar tudo',
+    cancelText: 'Cancelar',
+    danger: true
+  });
+  if (!ok) return;
   try {
     var snap = await db.collection('sessions').doc(currentSessionId).collection('responses').get();
-    if (snap.empty) { alert('Não há respostas para apagar.'); return; }
+    if (snap.empty) { showToast('Não há respostas para apagar.', 'info'); return; }
     var batch = db.batch();
     snap.docs.forEach(function(d) { batch.delete(d.ref); });
     await batch.commit();
+    showToast('Todas as respostas foram apagadas.', 'success');
   } catch(err) {
-    console.error('Erro:', err); alert('Erro ao limpar. Tente novamente.');
+    console.error('Erro:', err);
+    showToast('Erro ao limpar. Tente novamente.', 'error');
   }
 }

@@ -159,7 +159,10 @@
     animation: fadeUp .5s .18s both;
   }
   .hero-title .accent {
-    color: var(--primary);
+    background: linear-gradient(135deg, #1BA890 25%, #6B4CF6 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
     position: relative;
   }
   .hero-title .accent::after {
@@ -167,9 +170,9 @@
     position: absolute;
     bottom: .06em; left: 0; right: 0;
     height: 2px;
-    background: var(--primary);
+    background: linear-gradient(135deg, #1BA890, #6B4CF6);
     border-radius: 2px;
-    opacity: .4;
+    opacity: .5;
   }
   .hero-desc {
     font-size: clamp(.95rem, 2.5vw, 1.1rem);
@@ -574,53 +577,24 @@
   .btn-legacy:hover { background: #5a3de0; }
   .btn-legacy:disabled { opacity: .6; pointer-events: none; }
 
-  /* ── Lista de sessões melhorada ── */
-  .session-list-item {
-    display: flex;
-    align-items: center;
-    gap: .85rem;
-    padding: .85rem 1rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    cursor: pointer;
-    transition: background var(--t), border-color var(--t), transform .12s;
-    margin-bottom: .5rem;
-  }
-  .session-list-item:last-child { margin-bottom: 0; }
-  .session-list-item:hover {
-    background: var(--primary-light);
-    border-color: var(--primary);
-    transform: translateX(3px);
-  }
+  /* ── Lista de sessões — dot estilizado ── */
   .session-list-dot {
-    width: 8px; height: 8px;
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--primary-light);
+    border: 1px solid var(--border-bright);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .session-list-dot::after {
+    content: '';
+    width: 10px; height: 10px;
     border-radius: 50%;
     background: var(--primary);
-    flex-shrink: 0;
-    box-shadow: 0 0 6px rgba(27,168,144,.5);
+    box-shadow: 0 0 8px rgba(27,168,144,.55);
   }
-  .session-list-info { flex: 1; min-width: 0; }
-  .session-list-title {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: .88rem;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .session-list-meta {
-    font-size: .7rem;
-    color: var(--text-muted);
-    margin-top: .1rem;
-  }
-  .session-list-arrow {
-    color: var(--text-dim);
-    transition: color var(--t);
-    flex-shrink: 0;
-  }
-  .session-list-item:hover .session-list-arrow { color: var(--primary); }
+  .session-list-item { padding: .95rem 1.1rem; border-radius: var(--radius); gap: 1rem; }
+  .session-list-item:hover { box-shadow: 0 4px 20px rgba(27,168,144,.12); }
 
   /* ── Cabeçalho da sessão ativa ── */
   .session-active-header {
@@ -1463,6 +1437,7 @@
   <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script defer src="firebase-config.js"></script>
   <script defer src="theme.js"></script>
+  <script defer src="ui.js"></script>
   <script defer src="home.js"></script>
 </body>
 </html>

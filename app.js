@@ -197,7 +197,7 @@ async function loadPreviousSelection(user) {
         data.slots.forEach(function(slotId) {
           selectedSlots.add(slotId);
           var el = document.querySelector('[data-slot="' + CSS.escape(slotId) + '"]');
-          if (el) el.classList.add('selected');
+          if (el) { el.classList.add('selected'); el.setAttribute('aria-checked', 'true'); }
         });
         updateSelectedCount();
         if (data.name) {
@@ -274,6 +274,16 @@ function buildTimeRow(time) {
     var inner = document.createElement('div');
     inner.className    = 'slot-cell-inner';
     inner.dataset.slot = day + '_' + time;
+    inner.setAttribute('tabindex', '0');
+    inner.setAttribute('role', 'checkbox');
+    inner.setAttribute('aria-checked', 'false');
+    inner.setAttribute('aria-label', DAY_LABELS[day] + ' às ' + time);
+    inner.addEventListener('keydown', function(e) {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        applyToggle(inner.dataset.slot);
+      }
+    });
     td.appendChild(inner);
     tr.appendChild(td);
   });
@@ -328,8 +338,12 @@ function applyToggle(slotId) {
   } else {
     selectedSlots.add(slotId);
   }
+  var isSelected = selectedSlots.has(slotId);
   var el = document.querySelector('[data-slot="' + CSS.escape(slotId) + '"]');
-  if (el) el.classList.toggle('selected', selectedSlots.has(slotId));
+  if (el) {
+    el.classList.toggle('selected', isSelected);
+    el.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+  }
   updateSelectedCount();
 }
 
