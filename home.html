@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CombinAí — Encontre o melhor horário para todo mundo</title>
   <meta name="description" content="Crie uma sessão, compartilhe o link e veja em tempo real quando todos estão disponíveis." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231BA890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#1BA890" />
+  <meta property="og:title" content="CombinAí — Encontre o melhor horário para todo mundo" />
+  <meta property="og:description" content="Crie uma sessão, compartilhe o link e veja em tempo real quando todos estão disponíveis." />
+  <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -60,7 +65,7 @@
   /* ══════════════════════════════════════
      LANDING PAGE
   ══════════════════════════════════════ */
-  .landing-wrapper { min-height: 100vh; display: flex; flex-direction: column; }
+  .landing-wrapper { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 
   /* Header da landing */
   .landing-header {
@@ -362,7 +367,7 @@
   .btn-role:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
   .btn-role.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
   .btn-role.primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); color: #fff; }
-  .btn-role.muted { opacity: .5; cursor: default; }
+  .btn-role.muted { opacity: .45; cursor: not-allowed; pointer-events: none; }
   .btn-role.muted:hover { background: transparent; border-color: var(--border-bright); color: var(--text); }
 
   /* Footer */
@@ -509,6 +514,7 @@
     font-variant-numeric: tabular-nums;
   }
   .session-active-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: flex-start; }
+  .session-active-actions .btn { min-height: 36px; touch-action: manipulation; }
 
   /* ── Não autorizado ── */
   .denied-card {
@@ -520,7 +526,7 @@
     border: 1px solid var(--border-mid);
     border-radius: var(--radius);
   }
-  .denied-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+  .denied-icon { color: var(--text-muted); margin-bottom: 1rem; display: flex; justify-content: center; }
   .denied-title {
     font-family: var(--font-display);
     font-size: 1.1rem;
@@ -570,6 +576,10 @@
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Ir para o conteúdo principal</a>
+
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
 
   <!-- ── Carregando auth ── -->
   <div id="auth-loading">
@@ -611,7 +621,7 @@
         </nav>
       </header>
 
-      <main>
+      <main id="main-content">
         <!-- Hero -->
         <section class="hero" aria-label="Apresentação do CombinAí">
           <div class="hero-eyebrow" aria-hidden="true">
@@ -687,9 +697,9 @@
               <div class="role-badge">Participantes</div>
               <div class="role-title">Você responde pelo link</div>
               <p class="role-desc">Receba o link do organizador, faça login e marque sua disponibilidade.</p>
-              <span class="btn-role muted" aria-label="Participantes precisam do link do organizador">
+              <button class="btn-role muted" disabled aria-label="Participantes precisam do link do organizador — aguarde o link do organizador">
                 Aguarde o link
-              </span>
+              </button>
             </div>
           </div>
         </section>
@@ -731,7 +741,7 @@
       </div>
     </header>
 
-    <main class="main-container">
+    <main class="main-container" id="main-content">
 
       <!-- ── Dados legados ── -->
       <div id="legacy-banner" class="legacy-banner" style="display:none;" role="status">
@@ -921,7 +931,13 @@
   ═══════════════════════════════════════ -->
   <div id="not-authorized" class="page-state">
     <div class="denied-card">
-      <div class="denied-icon" aria-hidden="true">🔒</div>
+      <div class="denied-icon" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
       <div class="denied-title">Acesso não autorizado</div>
       <p class="denied-desc" id="denied-email-msg">
         Esta conta não tem permissão de administrador.
@@ -931,11 +947,11 @@
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="theme.js"></script>
-  <script src="home.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script defer src="firebase-config.js"></script>
+  <script defer src="theme.js"></script>
+  <script defer src="home.js"></script>
 </body>
 </html>

@@ -64,9 +64,20 @@ document.getElementById('signout-btn').addEventListener('click', function() {
   firebase.auth().signOut();
 });
 
+function animateCards(container) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cards = (container || document).querySelectorAll('.card');
+  cards.forEach(function(card, i) {
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    card.style.animation = 'cardEnter 0.38s cubic-bezier(0.22, 0.68, 0, 1.15) ' + (280 + i * 65) + 'ms both';
+  });
+}
+
 function showAppContent(user) {
   document.getElementById('auth-overlay').style.display = 'none';
   document.getElementById('app-content').classList.add('visible');
+  animateCards(document.getElementById('form-section'));
 
   // Avatar e nome no cabeçalho
   var avatarEl = document.getElementById('auth-avatar');
