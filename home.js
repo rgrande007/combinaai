@@ -435,8 +435,6 @@ function selectSession(sessionId, title) {
   setTimeout(function() { animateCards(document.getElementById('session-monitor-view')); }, 40);
 
   document.getElementById('session-title-display').textContent = title;
-  var baseUrl = window.location.origin + '/';
-  var link    = baseUrl + 'app.html?sessao=' + sessionId;
   var linkEl  = document.getElementById('session-link-display');
   linkEl.textContent = '';
   linkEl.innerHTML =
@@ -455,17 +453,30 @@ function selectSession(sessionId, title) {
         .filter(function(r) { return r.name; })
         .sort(function(a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
       renderAll(currentResponses);
-      // Write compact summary for card preview
+      // Write compact summary for card preview (dot-notation to preserve other summary fields)
       var sd = getSlotData(currentResponses);
       var slotsCompact = {};
       Object.keys(sd.counts).forEach(function(k) { if (sd.counts[k] > 0) slotsCompact[k] = sd.counts[k]; });
-      var sumUpdate = { totalResponses: currentResponses.length, slots: slotsCompact, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      var dotSumUpdate = {
+        'summary.totalResponses': currentResponses.length,
+        'summary.slots':          slotsCompact,
+        'summary.updatedAt':      firebase.firestore.FieldValue.serverTimestamp()
+      };
       if (sd.maxCount > 0) {
         var bestKey = null;
         DAYS.forEach(function(d) { ALL_TIMES.forEach(function(t) { var k = d+'_'+t; if (!bestKey || sd.counts[k] > sd.counts[bestKey]) bestKey = k; }); });
-        if (bestKey) { var bp = bestKey.split('_'); sumUpdate.bestDay = bp[0]; sumUpdate.bestTime = bp[1]; sumUpdate.bestCount = sd.counts[bestKey]; }
+        if (bestKey) {
+          var bp = bestKey.split('_');
+          dotSumUpdate['summary.bestDay']   = bp[0];
+          dotSumUpdate['summary.bestTime']  = bp[1];
+          dotSumUpdate['summary.bestCount'] = sd.counts[bestKey];
+        }
+      } else {
+        dotSumUpdate['summary.bestDay']   = firebase.firestore.FieldValue.delete();
+        dotSumUpdate['summary.bestTime']  = firebase.firestore.FieldValue.delete();
+        dotSumUpdate['summary.bestCount'] = firebase.firestore.FieldValue.delete();
       }
-      db.collection('sessions').doc(sessionId).update({ summary: sumUpdate }).catch(function(){});
+      db.collection('sessions').doc(sessionId).update(dotSumUpdate).catch(function(){});
     }, function(err) { console.error('Erro respostas:', err); });
 
   if (sessionDocUnsubscribe) sessionDocUnsubscribe();
@@ -651,7 +662,8 @@ function renderSessionList(sessions) {
   sessions.forEach(function(s) {
     var summary   = s.summary || null;
     var total     = summary
-      ? (summary.participants ? summary.participants.length : (summary.totalResponses || 0))
+      ? (typeof summary.totalResponses === 'number' ? summary.totalResponses
+         : (summary.participants ? summary.participants.length : 0))
       : 0;
     var isConf    = s.confirmed && s.confirmed.day;
 
