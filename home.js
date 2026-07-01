@@ -789,7 +789,7 @@ function animateCounter(el, toValue) {
 
 function animateCards(container) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var cards = (container || document).querySelectorAll('.card, .panel-section, .admin-welcome, .legacy-banner, .create-session-hero');
+  var cards = (container || document).querySelectorAll('.card, .panel-section, .legacy-banner, .create-session-hero');
   cards.forEach(function(card, i) {
     card.style.animation = 'none';
     void card.offsetWidth;

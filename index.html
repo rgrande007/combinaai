@@ -1034,6 +1034,9 @@
   .ps-count.visible       { display: inline-block; }
   .ps-count--violet       { color: var(--violet); background: rgba(107,76,246,.08); border-color: rgba(107,76,246,.2); }
 
+  /* Layout interno do gerenciador de sessões */
+  #session-manager { display: flex; flex-direction: column; gap: 1rem; }
+
   /* ── Card "Nova sessão" — alto contraste, hero visual ── */
   .create-session-hero {
     background: linear-gradient(135deg, #1BA890 0%, #10806D 55%, #0A6B5C 100%);
@@ -1484,29 +1487,6 @@
     </header>
 
     <main class="main-container" id="main-content">
-
-      <!-- ── Boas-vindas ── -->
-      <div class="admin-welcome">
-        <div class="admin-welcome-left">
-          <div class="admin-welcome-ico" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8"  y1="2" x2="8"  y2="6"/>
-              <line x1="3"  y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <div>
-            <div class="admin-welcome-title">Painel do organizador</div>
-            <div class="admin-welcome-sub">Crie sessões, acompanhe respostas e confirme o melhor horário.</div>
-          </div>
-        </div>
-        <div class="admin-live-pill">
-          <span class="admin-live-dot"></span>
-          Tempo real
-        </div>
-      </div>
 
       <!-- ── Dados legados ── -->
       <div id="legacy-banner" class="legacy-banner" style="display:none;" role="status">
