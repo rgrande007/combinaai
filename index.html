@@ -1051,11 +1051,13 @@
   /* ── Card "Nova sessão" — alto contraste, hero visual ── */
   .create-session-hero {
     background: linear-gradient(135deg, #1BA890 0%, #10806D 55%, #0A6B5C 100%);
+    border: 1px solid rgba(255,255,255,.14);
     border-radius: var(--radius);
-    padding: 1.25rem 1.35rem 1.3rem;
+    padding: 1.35rem 1.45rem 1.4rem;
+    margin-bottom: .85rem;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(27,168,144,.35);
+    box-shadow: 0 10px 34px rgba(10,107,92,.4), inset 0 1px 0 rgba(255,255,255,.12);
   }
   .create-session-hero::before {
     content: '';
@@ -1110,8 +1112,8 @@
   .csh-form-row { display: flex; gap: .55rem; align-items: center; }
   .csh-input {
     flex: 1;
-    background: rgba(255,255,255,.18);
-    border: 1.5px solid rgba(255,255,255,.28);
+    background: rgba(255,255,255,.16);
+    border: 1.5px solid rgba(255,255,255,.32);
     border-radius: var(--radius-sm);
     padding: .68rem 1rem;
     font-size: .9rem;
@@ -1122,12 +1124,25 @@
     min-width: 0;
     backdrop-filter: blur(4px);
   }
-  .csh-input::placeholder { color: rgba(255,255,255,.52); }
+  .csh-input::placeholder { color: rgba(255,255,255,.6); }
+  .csh-input:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.45); }
   .csh-input:focus {
-    background: rgba(255,255,255,.26);
-    border-color: rgba(255,255,255,.6);
+    background: rgba(255,255,255,.28);
+    border-color: rgba(255,255,255,.7);
+    box-shadow: 0 0 0 3px rgba(255,255,255,.14);
   }
-  select.csh-input { flex: none; cursor: pointer; padding: .55rem .7rem; }
+  select.csh-input {
+    flex: none;
+    cursor: pointer;
+    padding: .58rem 2rem .58rem .75rem;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .55rem center;
+    background-size: 15px;
+  }
+  select.csh-input option { color: #14201d; background: #fff; }
   .csh-btn {
     display: inline-flex; align-items: center; gap: .4rem;
     padding: .68rem 1.15rem;
@@ -1152,22 +1167,36 @@
     border-color: rgba(10,107,92,.18) !important;
     border-top-color: #0A6B5C !important;
   }
-  .csh-options { display: flex; flex-wrap: wrap; gap: .7rem 1rem; align-items: flex-end; }
-  .csh-field { display: flex; flex-direction: column; gap: .3rem; }
+  .csh-options { display: flex; flex-wrap: wrap; gap: .8rem 1.1rem; align-items: flex-end; }
+  .csh-field { display: flex; flex-direction: column; gap: .35rem; }
   .csh-field-label {
-    font-size: .68rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; color: rgba(255,255,255,.72);
+    font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .05em; color: rgba(255,255,255,.85);
   }
   .csh-days { display: flex; gap: .4rem; border: none; margin: 0; padding: 0; }
-  .csh-days legend { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,.72); padding: 0 0 .3rem; }
+  .csh-days legend { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: rgba(255,255,255,.85); padding: 0 0 .35rem; }
   .csh-day-chk {
-    display: inline-flex; align-items: center; gap: .3rem;
-    font-size: .78rem; color: #fff;
-    background: rgba(255,255,255,.14);
-    border: 1px solid rgba(255,255,255,.24);
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.9);
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.26);
     border-radius: var(--radius-sm);
-    padding: .4rem .6rem;
+    padding: .42rem .65rem;
     cursor: pointer;
+    user-select: none;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .csh-day-chk input { accent-color: #fff; width: 14px; height: 14px; cursor: pointer; }
+  .csh-day-chk:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.4); }
+  .csh-day-chk:has(input:checked) {
+    background: #fff;
+    border-color: #fff;
+    color: #0A6B5C;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  .csh-day-chk:has(input:focus-visible) {
+    outline: 2px solid rgba(255,255,255,.9);
+    outline-offset: 2px;
   }
   .csh-options-error {
     font-size: .78rem; color: #FFD9D9;
