@@ -29,6 +29,7 @@ populateTimeRangeSelects();
 // === Estado global ===
 var currentResponses       = [];
 var currentSessionId       = null;
+var currentSessionConfig   = SchedulingCore.getSessionConfig({}, DAYS, ALL_TIMES);
 var firestoreUnsubscribe   = null;
 var sessionDocUnsubscribe  = null;
 var sessionListUnsubscribe = null;
@@ -237,7 +238,7 @@ function initAdmin(user) {
 
     document.getElementById('admin-panel').addEventListener('click', function(e) {
       var btn = e.target.closest('.rec-confirm-btn');
-      if (btn) confirmSlot(btn.dataset.day, btn.dataset.time);
+      if (btn) confirmSlot(btn.dataset.day, btn.dataset.start);
     });
   }
 
@@ -467,7 +468,7 @@ function copySessionLink(sessionId) {
   }
 }
 
-function selectSession(sessionId, title) {
+async function selectSession(sessionId, title) {
   currentSessionId = sessionId;
   try { history.replaceState(null, '', '?sessao=' + sessionId); } catch(e) {}
 
@@ -486,6 +487,14 @@ function selectSession(sessionId, title) {
   currentResponses = [];
   renderAll([]);
 
+  currentSessionConfig = SchedulingCore.getSessionConfig({}, DAYS, ALL_TIMES);
+  try {
+    var seedDoc = await db.collection('sessions').doc(sessionId).get();
+    currentSessionConfig = SchedulingCore.getSessionConfig(seedDoc.exists ? seedDoc.data() : {}, DAYS, ALL_TIMES);
+  } catch(e) {
+    currentSessionConfig = SchedulingCore.getSessionConfig({}, DAYS, ALL_TIMES);
+  }
+
   if (firestoreUnsubscribe) firestoreUnsubscribe();
   firestoreUnsubscribe = db.collection('sessions').doc(sessionId)
     .collection('responses').onSnapshot(function(snapshot) {
@@ -495,7 +504,7 @@ function selectSession(sessionId, title) {
         .sort(function(a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
       renderAll(currentResponses);
       // Write compact summary for card preview (dot-notation to preserve other summary fields)
-      var sd = getSlotData(currentResponses);
+      var sd = SchedulingCore.getSlotData(currentResponses, currentSessionConfig);
       var slotsCompact = {};
       Object.keys(sd.counts).forEach(function(k) { if (sd.counts[k] > 0) slotsCompact[k] = sd.counts[k]; });
       var dotSumUpdate = {
@@ -505,7 +514,7 @@ function selectSession(sessionId, title) {
       };
       if (sd.maxCount > 0) {
         var bestKey = null;
-        DAYS.forEach(function(d) { ALL_TIMES.forEach(function(t) { var k = d+'_'+t; if (!bestKey || sd.counts[k] > sd.counts[bestKey]) bestKey = k; }); });
+        currentSessionConfig.days.forEach(function(d) { currentSessionConfig.times.forEach(function(t) { var k = d+'_'+t; if (!bestKey || sd.counts[k] > sd.counts[bestKey]) bestKey = k; }); });
         if (bestKey) {
           var bp = bestKey.split('_');
           dotSumUpdate['summary.bestDay']   = bp[0];
@@ -522,11 +531,15 @@ function selectSession(sessionId, title) {
 
   if (sessionDocUnsubscribe) sessionDocUnsubscribe();
   sessionDocUnsubscribe = db.collection('sessions').doc(sessionId).onSnapshot(function(doc) {
+    if (doc.exists) {
+      currentSessionConfig = SchedulingCore.getSessionConfig(doc.data(), DAYS, ALL_TIMES);
+      renderAll(currentResponses);
+    }
     var banner = document.getElementById('confirmed-slot-admin');
     var text   = document.getElementById('confirmed-slot-admin-text');
     if (doc.exists && doc.data().confirmed) {
       var c = doc.data().confirmed;
-      text.textContent = (DAY_LABELS_FULL[c.day] || c.day) + ', ' + c.time;
+      text.textContent = SchedulingCore.formatConfirmedLabel(c, DAY_LABELS_FULL);
       if (banner.style.display !== 'block') {
         banner.style.display = 'block';
         celebrateConfirmedSlot(banner);
@@ -934,8 +947,8 @@ function renderRecommendation(responses) {
     return;
   }
 
-  var data = getSlotData(responses);
-  var maxCount = data.maxCount;
+  var windows = SchedulingCore.computeIdealWindows(responses, currentSessionConfig);
+  var maxCount = windows.length ? windows[0].count : 0;
   var isAll    = (maxCount === total);
 
   if (maxCount === 0) {
@@ -944,22 +957,9 @@ function renderRecommendation(responses) {
     return;
   }
 
-  var ranked = [];
-  DAYS.forEach(function(day) {
-    ALL_TIMES.forEach(function(time) {
-      var key = day + '_' + time, count = data.counts[key] || 0;
-      if (count > 0) ranked.push({ day: day, time: time, count: count });
-    });
-  });
-  ranked.sort(function(a, b) {
-    if (b.count !== a.count) return b.count - a.count;
-    var dd = DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
-    return dd !== 0 ? dd : ALL_TIMES.indexOf(a.time) - ALL_TIMES.indexOf(b.time);
-  });
-
-  var topCount  = ranked.filter(function(s) { return s.count === maxCount; }).length;
+  var topCount  = windows.filter(function(w) { return w.count === maxCount; }).length;
   var showCount = Math.min(topCount, 3);
-  var topSlots  = ranked.slice(0, showCount);
+  var topSlots  = windows.slice(0, showCount);
 
   if (isAll) {
     cardEl.className    = 'card rec-unanimous';
@@ -977,15 +977,15 @@ function renderRecommendation(responses) {
 
   topSlots.forEach(function(slot, i) {
     var isAllSlot   = (slot.count === total);
-    var slotKey     = slot.day + '_' + slot.time;
-    var availNames  = data.namesBySlot[slotKey] || [];
+    var availNames  = slot.availNames;
     var absentNames = allNames.filter(function(n) { return availNames.indexOf(n) === -1; });
+    var timeLabel   = slot.startTime + ' – ' + slot.endTime;
     var el = document.createElement('div');
     el.className = 'rec-slot' + (isAllSlot ? ' rec-slot-top-all' : ' rec-slot-top');
     el.innerHTML =
       '<div class="rec-rank">' + (i + 1) + '</div>' +
       '<div class="rec-body">' +
-        '<div class="rec-time">' + DAY_LABELS_FULL[slot.day] + ', ' + slot.time +
+        '<div class="rec-time">' + DAY_LABELS_FULL[slot.day] + ', ' + timeLabel +
           (isAllSlot ? ' <span class="badge-all" title="Todos os ' + total + ' participantes estão disponíveis">Todos</span>' : '') +
         '</div>' +
         (availNames.length > 0 ? '<div class="rec-avail">✓ ' + availNames.map(escHtml).join(', ') + '</div>' : '') +
@@ -993,15 +993,15 @@ function renderRecommendation(responses) {
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">' +
         '<div class="rec-score"><div class="rec-score-num">' + slot.count + '<span class="rec-score-den">/' + total + '</span></div></div>' +
-        '<button class="btn btn-violet rec-confirm-btn" data-day="' + slot.day + '" data-time="' + escHtml(slot.time) + '" ' +
+        '<button class="btn btn-violet rec-confirm-btn" data-day="' + slot.day + '" data-start="' + escHtml(slot.startTime) + '" ' +
           'style="font-size:.8rem;padding:.45rem 1rem;white-space:nowrap;min-height:36px;" ' +
-          'aria-label="Confirmar ' + escHtml(DAY_LABELS_FULL[slot.day]) + ' às ' + escHtml(slot.time) + '">Confirmar</button>' +
+          'aria-label="Confirmar ' + escHtml(DAY_LABELS_FULL[slot.day]) + ' às ' + escHtml(timeLabel) + '">Confirmar</button>' +
       '</div>';
     list.appendChild(el);
   });
   contentEl.appendChild(list);
 
-  var remaining = ranked.length - showCount;
+  var remaining = windows.length - showCount;
   if (remaining > 0) {
     var p = document.createElement('p');
     p.className = 'hint'; p.style.marginTop = '.5rem';
@@ -1018,19 +1018,12 @@ function renderStats(responses) {
     document.getElementById('stat-best').textContent  = '—';
     return;
   }
-  var data = getSlotData(responses);
-  var unanimous = Object.keys(data.counts).filter(function(k) { return data.counts[k] === total; }).length;
+  var windows = SchedulingCore.computeIdealWindows(responses, currentSessionConfig);
+  var unanimous = windows.filter(function(w) { return w.count === total; }).length;
   animateCounter(document.getElementById('stat-slots'), unanimous);
-  var bestKey = null;
-  DAYS.forEach(function(day) {
-    ALL_TIMES.forEach(function(time) {
-      var k = day + '_' + time;
-      if (!bestKey || data.counts[k] > data.counts[bestKey]) bestKey = k;
-    });
-  });
-  if (bestKey && data.counts[bestKey] > 0) {
-    var parts = bestKey.split('_');
-    document.getElementById('stat-best').textContent = DAY_ABBR[parts[0]] + ' ' + parts[1];
+  if (windows.length > 0) {
+    var best = windows[0];
+    document.getElementById('stat-best').textContent = DAY_ABBR[best.day] + ' ' + best.startTime;
   } else {
     document.getElementById('stat-best').textContent = '—';
   }
@@ -1186,11 +1179,14 @@ function renderLegend() {
 // ============================================================
 // AÇÕES DE SESSÃO
 // ============================================================
-async function confirmSlot(day, time) {
+async function confirmSlot(day, startTime) {
   if (!currentSessionId) return;
+  var endTime = SchedulingCore.minutesToTime(
+    SchedulingCore.timeToMinutes(startTime) + currentSessionConfig.duration
+  );
   var ok = await showConfirm({
     title: 'Confirmar este horário?',
-    message: '<strong>' + escHtml(DAY_LABELS_FULL[day]) + ', ' + escHtml(time) + '</strong>' +
+    message: '<strong>' + escHtml(DAY_LABELS_FULL[day]) + ', ' + escHtml(startTime) + ' – ' + escHtml(endTime) + '</strong>' +
       '<br><span style="font-size:.85em;color:var(--text-muted)">Os participantes verão o horário confirmado na próxima vez que acessarem o link de convite.</span>',
     confirmText: 'Confirmar horário',
     cancelText: 'Cancelar',
@@ -1198,7 +1194,12 @@ async function confirmSlot(day, time) {
   });
   if (!ok) return;
   db.collection('sessions').doc(currentSessionId).update({
-    confirmed: { day: day, time: time, confirmedAt: firebase.firestore.FieldValue.serverTimestamp() }
+    confirmed: {
+      day: day,
+      startTime: startTime,
+      durationMinutes: currentSessionConfig.duration,
+      confirmedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }
   }).then(function() {
     showToast('Horário confirmado! Participantes verão na próxima visita.', 'success', 5000);
   }).catch(function(err) {
