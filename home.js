@@ -1058,36 +1058,19 @@ function renderParticipants(responses) {
   });
 }
 
-function getSlotData(responses) {
-  var counts = {}, namesBySlot = {};
-  DAYS.forEach(function(day) {
-    ALL_TIMES.forEach(function(time) {
-      var key = day + '_' + time;
-      counts[key] = 0; namesBySlot[key] = [];
-    });
-  });
-  responses.forEach(function(r) {
-    if (!r.slots) return;
-    r.slots.forEach(function(slot) {
-      if (counts[slot] !== undefined) { counts[slot]++; namesBySlot[slot].push(r.name); }
-    });
-  });
-  var values = Object.values(counts);
-  return { counts: counts, namesBySlot: namesBySlot, maxCount: values.length ? Math.max.apply(null, values) : 0 };
-}
-
 function renderAdminGrid(responses) {
   var head = document.getElementById('admin-grid-head');
   var body = document.getElementById('admin-grid-body');
   var total = responses.length;
-  var data  = getSlotData(responses);
+  var config = currentSessionConfig;
+  var data  = SchedulingCore.getSlotData(responses, config);
 
   head.innerHTML = '';
   var headerRow = document.createElement('tr');
   var emptyTh = document.createElement('th');
   emptyTh.setAttribute('scope', 'col');
   headerRow.appendChild(emptyTh);
-  DAYS.forEach(function(day) {
+  config.days.forEach(function(day) {
     var th = document.createElement('th');
     th.textContent = DAY_LABELS[day];
     th.setAttribute('scope', 'col');
@@ -1097,14 +1080,16 @@ function renderAdminGrid(responses) {
   body.innerHTML = '';
 
   function appendSection(label, times) {
-    var sRow = document.createElement('tr'); sRow.className = 'section-row';
-    var td = document.createElement('td'); td.colSpan = DAYS.length + 1; td.textContent = label;
-    sRow.appendChild(td); body.appendChild(sRow);
+    if (label) {
+      var sRow = document.createElement('tr'); sRow.className = 'section-row';
+      var sTd = document.createElement('td'); sTd.colSpan = config.days.length + 1; sTd.textContent = label;
+      sRow.appendChild(sTd); body.appendChild(sRow);
+    }
     times.forEach(function(time) {
       var tr = document.createElement('tr');
       var timeTd = document.createElement('td'); timeTd.className = 'time-label'; timeTd.textContent = time;
       tr.appendChild(timeTd);
-      DAYS.forEach(function(day) {
+      config.days.forEach(function(day) {
         var key = day + '_' + time, count = data.counts[key] || 0, names = data.namesBySlot[key] || [];
         var td = document.createElement('td'); td.className = 'admin-slot-cell';
         var inner = document.createElement('div');
@@ -1132,8 +1117,12 @@ function renderAdminGrid(responses) {
     });
   }
 
-  appendSection('Manhã', MORNING_TIMES);
-  appendSection('Tarde', AFTERNOON_TIMES);
+  if (config.isLegacyGrid) {
+    appendSection('Manhã', MORNING_TIMES);
+    appendSection('Tarde', AFTERNOON_TIMES);
+  } else {
+    appendSection(null, config.times);
+  }
 
   var allCells = body.querySelectorAll('.admin-slot-inner');
 
@@ -1248,32 +1237,20 @@ function buildInviteUrl() {
 
 function copyRecommendation() {
   if (currentResponses.length === 0) { showToast('Nenhuma resposta para copiar.', 'info'); return; }
-  var data = getSlotData(currentResponses), total = currentResponses.length;
+  var windows = SchedulingCore.computeIdealWindows(currentResponses, currentSessionConfig);
+  var total = currentResponses.length;
   var allNames = currentResponses.map(function(r) { return r.name; });
-  var maxCount = data.maxCount, isAll = (maxCount === total);
+  var maxCount = windows.length ? windows[0].count : 0, isAll = (maxCount === total);
 
   var text = isAll
     ? '=== Horário Ideal — todos os ' + total + ' participantes disponíveis ===\n\n'
     : '=== Recomendação de Horário (' + maxCount + '/' + total + ' disponíveis) ===\n\n';
 
-  var ranked = [];
-  DAYS.forEach(function(day) {
-    ALL_TIMES.forEach(function(time) {
-      var key = day + '_' + time, count = data.counts[key] || 0;
-      if (count > 0) ranked.push({ day: day, time: time, count: count });
-    });
-  });
-  ranked.sort(function(a, b) {
-    if (b.count !== a.count) return b.count - a.count;
-    var dd = DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
-    return dd !== 0 ? dd : ALL_TIMES.indexOf(a.time) - ALL_TIMES.indexOf(b.time);
-  });
-
-  ranked.slice(0, Math.min(5, ranked.length)).forEach(function(slot, i) {
-    var avail   = data.namesBySlot[slot.day + '_' + slot.time] || [];
+  windows.slice(0, Math.min(5, windows.length)).forEach(function(slot, i) {
+    var avail   = slot.availNames;
     var unavail = allNames.filter(function(n) { return avail.indexOf(n) === -1; });
     var pct     = Math.round((slot.count / total) * 100);
-    text += (i + 1) + '. ' + DAY_LABELS_FULL[slot.day] + ', ' + slot.time + ' (' + slot.count + '/' + total + ' — ' + pct + '%)\n';
+    text += (i + 1) + '. ' + DAY_LABELS_FULL[slot.day] + ', ' + slot.startTime + ' – ' + slot.endTime + ' (' + slot.count + '/' + total + ' — ' + pct + '%)\n';
     text += '   Disponíveis: ' + avail.join(', ') + '\n';
     if (unavail.length > 0) text += '   Ausentes: ' + unavail.join(', ') + '\n';
     text += '\n';
@@ -1298,7 +1275,7 @@ function _fallbackCopyText(text) {
 function exportCSV() {
   if (currentResponses.length === 0) { showToast('Nenhuma resposta para exportar.', 'info'); return; }
   var allSlots = [];
-  DAYS.forEach(function(day) { ALL_TIMES.forEach(function(time) { allSlots.push(day + '_' + time); }); });
+  currentSessionConfig.days.forEach(function(day) { currentSessionConfig.times.forEach(function(time) { allSlots.push(day + '_' + time); }); });
   var headers = ['Nome','Email','Data de envio'].concat(allSlots);
   var rows = currentResponses.map(function(r) {
     var date = '';
