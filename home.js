@@ -10,6 +10,22 @@ var MORNING_TIMES   = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00'];
 var AFTERNOON_TIMES = ['14:00','14:30','15:00','15:30','16:00','16:30','17:00'];
 var ALL_TIMES       = MORNING_TIMES.concat(AFTERNOON_TIMES);
 
+function populateTimeRangeSelects() {
+  var startSel = document.getElementById('session-start-input');
+  var endSel   = document.getElementById('session-end-input');
+  if (!startSel || !endSel) return;
+  var options = '';
+  for (var m = 7 * 60; m <= 20 * 60; m += 30) {
+    var t = SchedulingCore.minutesToTime(m);
+    options += '<option value="' + t + '">' + t + '</option>';
+  }
+  startSel.innerHTML = options;
+  endSel.innerHTML   = options;
+  startSel.value = '09:00';
+  endSel.value   = '17:00';
+}
+populateTimeRangeSelects();
+
 // === Estado global ===
 var currentResponses       = [];
 var currentSessionId       = null;
@@ -327,6 +343,27 @@ async function createSession() {
   var title = titleInput.value.trim();
   if (!title) { titleInput.focus(); return; }
 
+  var errorEl = document.getElementById('session-options-error');
+  errorEl.style.display = 'none';
+
+  var duration  = parseInt(document.getElementById('session-duration-input').value, 10);
+  var startTime = document.getElementById('session-start-input').value;
+  var endTime   = document.getElementById('session-end-input').value;
+  var days = Array.prototype.slice
+    .call(document.querySelectorAll('#session-days-input input[type=checkbox]:checked'))
+    .map(function(el) { return el.value; });
+
+  if (days.length === 0) {
+    errorEl.textContent = 'Selecione ao menos um dia da semana.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if ((SchedulingCore.timeToMinutes(endTime) - SchedulingCore.timeToMinutes(startTime)) < duration) {
+    errorEl.textContent = 'A janela de horários é menor que a duração da reunião.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
   var btn = document.getElementById('create-session-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner csh-spinner"></span> Criando...';
@@ -337,7 +374,11 @@ async function createSession() {
     await db.collection('sessions').doc(sessionId).set({
       title:     title,
       createdBy: adminEmail,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      duration:  duration,
+      days:      days,
+      startTime: startTime,
+      endTime:   endTime
     });
     titleInput.value = '';
     selectSession(sessionId, title);
