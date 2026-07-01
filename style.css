@@ -317,7 +317,7 @@ body::before {
   font-size: .7rem;
   color: var(--text-dim);
   transition: background var(--t), border-color var(--t), color var(--t), box-shadow var(--t);
-  touch-action: manipulation;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
 .slot-cell-inner:hover {
@@ -1335,6 +1335,97 @@ body::before {
   border: 1px solid var(--border);
 }
 .session-skeleton:last-child { margin-bottom: 0; }
+
+/* =============================================
+   Botão voltar — navegação tipo breadcrumb
+   ============================================= */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  font-size: .8rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: color .15s;
+  line-height: 1;
+  text-decoration: none;
+}
+.btn-back:hover { color: var(--primary); }
+.btn-back svg   { transition: transform .18s cubic-bezier(.22,.68,0,1.2); flex-shrink: 0; }
+.btn-back:hover svg { transform: translateX(-4px); }
+
+/* Header da sessão ativa — layout com breadcrumb + info */
+.session-active-header {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .85rem 1rem 1rem;
+  margin-bottom: .25rem;
+}
+.session-active-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.session-active-label {
+  font-size: .6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--primary);
+  margin-bottom: .2rem;
+}
+.session-active-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: .2rem;
+  outline: none;
+}
+.session-active-link {
+  font-size: .72rem;
+  color: var(--text-muted);
+  word-break: break-all;
+  line-height: 1.4;
+}
+.session-active-actions {
+  display: flex;
+  gap: .5rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Banner "você já respondeu" no app.html */
+.already-submitted-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  background: var(--primary-light);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius);
+  padding: .8rem 1rem;
+  color: var(--text);
+  margin-bottom: .5rem;
+}
+.already-submitted-banner svg { color: var(--primary); flex-shrink: 0; margin-top: .1rem; }
+.already-submitted-banner strong { font-weight: 600; }
+.already-submitted-banner .hint { margin-top: .2rem; font-size: .78rem; }
+
+[data-theme="light"] .session-active-header { background: #EDF4F2; border-color: rgba(15,46,42,.1); }
+[data-theme="light"] .btn-back { color: #5E8A83; }
+[data-theme="light"] .btn-back:hover { color: #1BA890; }
+[data-theme="light"] .already-submitted-banner { background: rgba(27,168,144,.08); border-color: #1BA890; }
 
 /* =============================================
    Botão violeta — CTA especial

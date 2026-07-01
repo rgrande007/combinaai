@@ -135,13 +135,25 @@ function resetGoogleBtn() {
 // === Carrega título da sessão ===
 function loadSessionInfo() {
   db.collection('sessions').doc(SESSION_ID).get().then(function(doc) {
-    if (!doc.exists) return;
+    if (!doc.exists) {
+      document.getElementById('no-session-card').innerHTML =
+        '<div style="text-align:center;padding:1.5rem 1rem;">' +
+        '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:1rem;" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:1.05rem;margin-bottom:.5rem;">Sessão não encontrada</div>' +
+        '<p class="hint">Este link pode ter expirado ou a sessão foi encerrada.<br>Peça um novo link ao organizador.</p>' +
+        '</div>';
+      document.getElementById('no-session-card').style.display = 'block';
+      document.getElementById('form-section').style.display = 'none';
+      return;
+    }
     var title = doc.data().title || '';
     if (!title) return;
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-subtitle').textContent = 'Marque os horários em que você está disponível';
     document.title = title + ' — Disponibilidade';
-  }).catch(function() {});
+  }).catch(function() {
+    showMessage('Erro ao carregar a sessão. Verifique sua conexão e recarregue a página.', 'error');
+  });
 }
 
 // === Listener: horário confirmado (no doc da sessão) ===
@@ -185,6 +197,26 @@ function loadRespondents() {
     }, function() {});
 }
 
+// === Banner "você já respondeu" ===
+function showAlreadySubmittedBanner(submittedAt) {
+  if (document.getElementById('already-submitted-banner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'already-submitted-banner';
+  banner.className = 'already-submitted-banner';
+  banner.setAttribute('role', 'status');
+  var dateStr = '';
+  if (submittedAt && submittedAt.seconds) {
+    dateStr = ' em ' + new Date(submittedAt.seconds * 1000)
+      .toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+  banner.innerHTML =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>' +
+    '<div><strong>Disponibilidade já enviada' + dateStr + '.</strong>' +
+    '<p class="hint">Altere os horários e salve novamente para atualizar sua resposta.</p></div>';
+  var formSection = document.getElementById('form-section');
+  formSection.insertBefore(banner, formSection.firstChild);
+}
+
 // === Carrega seleção anterior (pelo e-mail como doc ID) ===
 async function loadPreviousSelection(user) {
   if (!SESSION_ID) return;
@@ -200,6 +232,7 @@ async function loadPreviousSelection(user) {
           if (el) { el.classList.add('selected'); el.setAttribute('aria-checked', 'true'); }
         });
         updateSelectedCount();
+        showAlreadySubmittedBanner(data.submittedAt);
         if (data.name) {
           var nameInput = document.getElementById('name-input');
           try {

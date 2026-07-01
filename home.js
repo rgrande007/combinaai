@@ -253,6 +253,21 @@ function initAdmin(user) {
 
   startSessionList(user.email);
   checkLegacyData();
+
+  var urlSessionId = null;
+  try { urlSessionId = new URLSearchParams(window.location.search).get('sessao'); } catch(e) {}
+  if (urlSessionId) {
+    db.collection('sessions').doc(urlSessionId).get()
+      .then(function(doc) {
+        if (doc.exists && (doc.data().createdBy || '').toLowerCase() === (user.email || '').toLowerCase()) {
+          selectSession(urlSessionId, doc.data().title || 'Sessão');
+        } else {
+          try { history.replaceState(null, '', window.location.pathname); } catch(e) {}
+          if (doc.exists) showToast('Esta sessão pertence a outro organizador.', 'info');
+        }
+      })
+      .catch(function() { try { history.replaceState(null, '', window.location.pathname); } catch(e) {} });
+  }
 }
 
 // ============================================================
@@ -437,6 +452,7 @@ function copySessionLink(sessionId) {
 
 function selectSession(sessionId, title) {
   currentSessionId = sessionId;
+  try { history.replaceState(null, '', '?sessao=' + sessionId); } catch(e) {}
 
   document.getElementById('session-manager').style.display = 'none';
   document.getElementById('session-monitor-view').style.display = 'block';
@@ -476,6 +492,11 @@ function selectSession(sessionId, title) {
       banner.style.display = 'none';
     }
   }, function(err) { console.error('Erro doc sessão:', err); });
+
+  setTimeout(function() {
+    var el = document.getElementById('session-title-display');
+    if (el) { el.setAttribute('tabindex', '-1'); el.focus(); }
+  }, 350);
 }
 
 function backToSessions() {
@@ -483,9 +504,14 @@ function backToSessions() {
   if (sessionDocUnsubscribe) { sessionDocUnsubscribe(); sessionDocUnsubscribe = null; }
   currentSessionId = null;
   currentResponses = [];
+  try { history.replaceState(null, '', window.location.pathname); } catch(e) {}
   document.getElementById('session-monitor-view').style.display = 'none';
   document.getElementById('session-manager').style.display = 'block';
   setTimeout(function() { animateCards(document.getElementById('session-manager')); }, 40);
+  setTimeout(function() {
+    var el = document.getElementById('session-title-input');
+    if (el) el.focus();
+  }, 350);
 }
 
 function startSessionList(adminEmail) {
@@ -716,7 +742,7 @@ function renderRecommendation(responses) {
       '<div class="rec-rank">' + (i + 1) + '</div>' +
       '<div class="rec-body">' +
         '<div class="rec-time">' + DAY_LABELS_FULL[slot.day] + ', ' + slot.time +
-          (isAllSlot ? ' <span class="badge-all">Todos</span>' : '') +
+          (isAllSlot ? ' <span class="badge-all" title="Todos os ' + total + ' participantes estão disponíveis">Todos</span>' : '') +
         '</div>' +
         (availNames.length > 0 ? '<div class="rec-avail">✓ ' + availNames.map(escHtml).join(', ') + '</div>' : '') +
         (absentNames.length > 0 ? '<div class="rec-absent"><strong>Ausentes:</strong> ' + absentNames.map(escHtml).join(', ') + '</div>' : '') +
@@ -735,7 +761,7 @@ function renderRecommendation(responses) {
   if (remaining > 0) {
     var p = document.createElement('p');
     p.className = 'hint'; p.style.marginTop = '.5rem';
-    p.textContent = '+ ' + remaining + ' opção(ões) na tabela abaixo.';
+    p.textContent = remaining + ' outro' + (remaining > 1 ? 's' : '') + ' horário' + (remaining > 1 ? 's' : '') + ' disponíveis na tabela completa abaixo.';
     contentEl.appendChild(p);
   }
 }
@@ -916,13 +942,25 @@ function renderLegend() {
 // ============================================================
 // AÇÕES DE SESSÃO
 // ============================================================
-function confirmSlot(day, time) {
+async function confirmSlot(day, time) {
   if (!currentSessionId) return;
+  var ok = await showConfirm({
+    title: 'Confirmar este horário?',
+    message: '<strong>' + escHtml(DAY_LABELS_FULL[day]) + ', ' + escHtml(time) + '</strong>' +
+      '<br><span style="font-size:.85em;color:var(--text-muted)">Os participantes verão o horário confirmado na próxima vez que acessarem o link de convite.</span>',
+    confirmText: 'Confirmar horário',
+    cancelText: 'Cancelar',
+    danger: false
+  });
+  if (!ok) return;
   db.collection('sessions').doc(currentSessionId).update({
     confirmed: { day: day, time: time, confirmedAt: firebase.firestore.FieldValue.serverTimestamp() }
   }).then(function() {
-    showToast('Horário confirmado!', 'success');
-  }).catch(function(err) { console.error('Erro ao confirmar:', err); });
+    showToast('Horário confirmado! Participantes verão na próxima visita.', 'success', 5000);
+  }).catch(function(err) {
+    console.error('Erro ao confirmar:', err);
+    showToast('Erro ao confirmar o horário. Tente novamente.', 'error');
+  });
 }
 
 async function clearConfirmedSlot() {
