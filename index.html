@@ -958,6 +958,145 @@
   [data-theme="light"] .participation-card { background: #fff; }
   [data-theme="light"] .sc-h0 { background: #F0F4F3; border-color: #D0E4DE; }
 
+  /* ══════════════════════════════════════
+     PANEL SECTIONS — seções com papel distinto
+  ══════════════════════════════════════ */
+  .panel-section {
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .panel-section--org  { border-left: 3px solid var(--primary); }
+  .panel-section--par  { border-left: 3px solid var(--violet); }
+
+  .ps-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .9rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .ps-header-identity {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-width: 0;
+  }
+  .ps-ico {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--primary-light);
+    border: 1px solid var(--border-bright);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+  .ps-ico--violet {
+    background: rgba(107,76,246,.1);
+    border-color: rgba(107,76,246,.2);
+    color: var(--violet);
+  }
+  .ps-role-tag {
+    display: inline-block;
+    font-size: .6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    padding: .08rem .5rem;
+    border-radius: 999px;
+    margin-bottom: .18rem;
+  }
+  .ps-role-tag--teal   { background: var(--primary-light); color: var(--primary); border: 1px solid var(--border-bright); }
+  .ps-role-tag--violet { background: rgba(107,76,246,.1); color: var(--violet); border: 1px solid rgba(107,76,246,.2); }
+  .ps-section-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: .88rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    line-height: 1.2;
+  }
+  .ps-count {
+    font-size: .68rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .04rem .45rem;
+    display: none;
+    font-family: var(--font-mono, monospace);
+  }
+  .ps-count.visible       { display: inline-block; }
+  .ps-count--violet       { color: var(--violet); background: rgba(107,76,246,.08); border-color: rgba(107,76,246,.2); }
+
+  /* Botão "+ Nova sessão" */
+  .btn-new-session {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .42rem .9rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+    font-family: var(--font-display);
+    font-size: .78rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background var(--t), color var(--t);
+  }
+  .btn-new-session:hover                   { background: var(--primary); color: #fff; }
+  .btn-new-session[aria-expanded="true"]   { background: var(--primary); color: #fff; }
+  .btn-new-session[aria-expanded="true"] svg { transform: rotate(45deg); }
+  .btn-new-session svg { transition: transform .22s cubic-bezier(.22,.68,0,1.2); }
+
+  /* Formulário retrátil — smooth grid-row animation */
+  .create-form-drawer {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .32s cubic-bezier(.22,.68,0,1.2);
+  }
+  .create-form-drawer.open { grid-template-rows: 1fr; }
+  .create-form-inner {
+    overflow: hidden;
+    min-height: 0;
+    padding: 0 1.1rem;
+    transition: padding .32s cubic-bezier(.22,.68,0,1.2), border-color .32s;
+    border-bottom: 0px solid var(--border);
+  }
+  .create-form-drawer.open .create-form-inner {
+    padding: 1rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Containers das listas */
+  .ps-list-container { padding: .6rem .6rem; }
+  .ps-list-container:empty { padding: 0; }
+
+  /* Divisória entre papéis */
+  .panel-role-sep { display: flex; align-items: center; padding: .4rem 0; }
+  .panel-role-sep-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(27,168,144,.22) 25%, rgba(107,76,246,.22) 75%, transparent);
+  }
+
+  /* Participation card — hover violet */
+  .participation-card {
+    transition: border-color var(--t), transform var(--t), box-shadow var(--t);
+  }
+  .participation-card:hover {
+    border-color: var(--violet);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(107,76,246,.1);
+  }
+
+  [data-theme="light"] .panel-section { background: #fff; box-shadow: 0 1px 6px rgba(15,46,42,.07); }
+
   /* Guard reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     .hero-av { animation: none !important; opacity: .8; }
@@ -1317,45 +1456,89 @@
       <!-- ── Gerenciador de sessões ── -->
       <div id="session-manager">
 
-        <div class="card" id="session-creator-card">
-          <div class="admin-create-top">
-            <div class="admin-create-ico" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8"  y1="2" x2="8"  y2="6"/>
-                <line x1="12" y1="14" x2="12" y2="18"/>
-                <line x1="10" y1="16" x2="14" y2="16"/>
+        <!-- ── Seção: Organizador ── -->
+        <div class="panel-section panel-section--org" id="session-list-card">
+          <div class="ps-header">
+            <div class="ps-header-identity">
+              <div class="ps-ico" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8"  y1="2" x2="8"  y2="6"/>
+                  <line x1="3"  y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div>
+                <span class="ps-role-tag ps-role-tag--teal">Organizador</span>
+                <div class="ps-section-title">
+                  Minhas sessões
+                  <span class="ps-count" id="session-count-badge"></span>
+                </div>
+              </div>
+            </div>
+            <button class="btn-new-session" id="create-toggle-btn"
+                    aria-expanded="false" aria-controls="create-form-drawer"
+                    aria-label="Criar nova sessão">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-            </div>
-            <div>
-              <div class="card-title">Nova sessão</div>
-              <p class="hint">Dê um nome, gere o link e compartilhe.</p>
+              Nova sessão
+            </button>
+          </div>
+
+          <!-- Formulário retrátil -->
+          <div class="create-form-drawer" id="create-form-drawer"
+               role="region" aria-label="Criar nova sessão" aria-hidden="true">
+            <div class="create-form-inner">
+              <div class="form-group" style="margin-bottom:.75rem;">
+                <label class="form-label" for="session-title-input">Nome da reunião</label>
+                <input type="text" id="session-title-input" class="form-input"
+                       placeholder="Ex: Reunião de alinhamento Q3"
+                       maxlength="100" autocomplete="off" />
+              </div>
+              <button class="btn btn-primary" id="create-session-btn"
+                      style="width:100%;padding:.85rem 1.25rem;font-size:1rem;"
+                      aria-label="Criar sessão e gerar link de convite">
+                Criar sessão e gerar link
+              </button>
             </div>
           </div>
-          <div class="form-group" style="margin-bottom:.75rem;">
-            <label class="form-label" for="session-title-input">Nome da reunião</label>
-            <input type="text" id="session-title-input" class="form-input"
-                   placeholder="Ex: Reunião de alinhamento Q3"
-                   maxlength="100" autocomplete="off"
-                   style="max-width:100%;" />
+
+          <!-- Lista de sessões -->
+          <div id="session-list-container" class="ps-list-container"></div>
+        </div>
+
+        <!-- Divisória entre papéis -->
+        <div class="panel-role-sep" aria-hidden="true">
+          <div class="panel-role-sep-line"></div>
+        </div>
+
+        <!-- ── Seção: Participante ── -->
+        <div class="panel-section panel-section--par" id="participations-card" style="display:none;">
+          <div class="ps-header">
+            <div class="ps-header-identity">
+              <div class="ps-ico ps-ico--violet" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div>
+                <span class="ps-role-tag ps-role-tag--violet">Participante</span>
+                <div class="ps-section-title">
+                  Sessões em que participei
+                  <span class="ps-count ps-count--violet" id="participation-count-badge"></span>
+                </div>
+              </div>
+            </div>
           </div>
-          <button class="btn btn-primary" id="create-session-btn"
-                  style="width:100%;padding:.85rem 1.25rem;font-size:1rem;"
-                  aria-label="Criar sessão e gerar link de convite">
-            Criar sessão e gerar link
-          </button>
-        </div>
-
-        <div class="card" id="session-list-card" style="display:none;">
-          <div class="card-title">Minhas sessões</div>
-          <div id="session-list-container"></div>
-        </div>
-
-        <div class="card" id="participations-card" style="display:none;">
-          <div class="card-title">Sessões em que participei</div>
-          <div id="participations-container"></div>
+          <div id="participations-container" class="ps-list-container"></div>
         </div>
 
       </div>

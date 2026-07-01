@@ -91,9 +91,18 @@ function doSignout() {
   firebase.auth().signOut();
   document.getElementById('session-monitor-view').style.display = 'none';
   document.getElementById('session-manager').style.display = 'block';
-  document.getElementById('session-list-card').style.display = 'none';
   document.getElementById('session-list-container').innerHTML = '';
   document.getElementById('legacy-banner').style.display = 'none';
+  var parCard = document.getElementById('participations-card');
+  if (parCard) parCard.style.display = 'none';
+  var drawer = document.getElementById('create-form-drawer');
+  if (drawer) { drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true'); }
+  var toggleBtn = document.getElementById('create-toggle-btn');
+  if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+  var sb = document.getElementById('session-count-badge');
+  if (sb) { sb.textContent = ''; sb.classList.remove('visible'); }
+  var pb = document.getElementById('participation-count-badge');
+  if (pb) { pb.textContent = ''; pb.classList.remove('visible'); }
 }
 
 function populateAdminHeader(user) {
@@ -204,6 +213,19 @@ function initAdmin(user) {
     document.getElementById('create-session-btn').addEventListener('click', createSession);
     document.getElementById('session-title-input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') createSession();
+    });
+    document.getElementById('create-toggle-btn').addEventListener('click', function() {
+      var drawer = document.getElementById('create-form-drawer');
+      var isOpen = drawer.classList.contains('open');
+      drawer.classList.toggle('open', !isOpen);
+      drawer.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+      this.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      if (!isOpen) {
+        setTimeout(function() {
+          var inp = document.getElementById('session-title-input');
+          if (inp) inp.focus();
+        }, 340);
+      }
     });
     document.getElementById('back-to-sessions-btn').addEventListener('click', backToSessions);
     document.getElementById('copy-invite-session-btn').addEventListener('click', copyInviteLink);
@@ -335,6 +357,11 @@ async function createSession() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     titleInput.value = '';
+    // Fecha o formulário
+    var drawer = document.getElementById('create-form-drawer');
+    var toggleBtn = document.getElementById('create-toggle-btn');
+    if (drawer) { drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true'); }
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
     selectSession(sessionId, title);
   } catch(err) {
     console.error('Erro ao criar sessão:', err);
@@ -550,9 +577,9 @@ function startParticipationsList(userEmail) {
 
 function renderParticipationsList(items, card, container) {
   if (!items.length) { card.style.display = 'none'; return; }
-  var titleEl = card.querySelector('.card-title');
-  if (titleEl) titleEl.textContent = 'Sessões em que participei (' + items.length + ')';
   card.style.display = 'block';
+  var badge = document.getElementById('participation-count-badge');
+  if (badge) { badge.textContent = items.length; badge.classList.add('visible'); }
   container.innerHTML = '';
   items.forEach(function(item) {
     var rd = item.rd, sd = item.sd, sid = item.sessionId;
@@ -588,19 +615,18 @@ function renderSessionList(sessions) {
   var container = document.getElementById('session-list-container');
 
   if (sessions.length === 0) {
-    listCard.style.display = 'block';
     container.innerHTML =
       '<div class="session-empty-state">' +
         '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>' +
-        '<p>Nenhuma sessão criada ainda.<br><span class="hint">Crie sua primeira sessão acima.</span></p>' +
+        '<p>Nenhuma sessão criada ainda.<br><span class="hint">Clique em "Nova sessão" para começar.</span></p>' +
       '</div>';
+    var badge = document.getElementById('session-count-badge');
+    if (badge) { badge.textContent = ''; badge.classList.remove('visible'); }
     return;
   }
 
-  var titleEl = listCard.querySelector('.card-title');
-  if (titleEl) titleEl.textContent = 'Minhas sessões (' + sessions.length + ')';
-
-  listCard.style.display = 'block';
+  var badge = document.getElementById('session-count-badge');
+  if (badge) { badge.textContent = sessions.length; badge.classList.add('visible'); }
   container.innerHTML = '';
 
   sessions.forEach(function(s) {
@@ -785,7 +811,7 @@ function animateCounter(el, toValue) {
 
 function animateCards(container) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var cards = (container || document).querySelectorAll('.card');
+  var cards = (container || document).querySelectorAll('.card, .panel-section, .admin-welcome, .legacy-banner');
   cards.forEach(function(card, i) {
     card.style.animation = 'none';
     void card.offsetWidth;
