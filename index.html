@@ -334,9 +334,9 @@
   .keyword-strip {
     width: 100%;
     overflow: hidden;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    border-top: 1px solid rgba(27,168,144,.2);
+    border-bottom: 1px solid rgba(107,76,246,.2);
+    background: linear-gradient(100deg, rgba(27,168,144,.08) 0%, rgba(107,76,246,.09) 50%, rgba(27,168,144,.08) 100%);
     padding: 1rem 0;
     position: relative;
   }
@@ -345,35 +345,53 @@
     content: '';
     position: absolute;
     top: 0; bottom: 0;
-    width: 80px;
+    width: 100px;
     z-index: 2;
     pointer-events: none;
   }
-  .keyword-strip::before { left: 0;  background: linear-gradient(90deg,  var(--surface), transparent); }
-  .keyword-strip::after  { right: 0; background: linear-gradient(270deg, var(--surface), transparent); }
+  .keyword-strip::before { left: 0;  background: linear-gradient(90deg,  var(--bg), transparent); }
+  .keyword-strip::after  { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
   .keyword-track {
     display: flex;
     width: max-content;
-    gap: 2.5rem;
-    animation: marquee 26s linear infinite;
+    gap: 1.75rem;
+    animation: marquee 34s linear infinite;
   }
   .keyword-item {
     display: flex;
     align-items: center;
-    gap: .5rem;
+    gap: .45rem;
     font-family: var(--font-display);
-    font-size: .85rem;
+    font-size: .82rem;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--text);
     white-space: nowrap;
+    opacity: .85;
   }
-  .keyword-item svg { color: var(--primary); flex-shrink: 0; }
+  .keyword-item svg { flex-shrink: 0; }
+  .keyword-item.kw-sep { color: var(--text-dim); font-size: .7rem; opacity: .4; }
   @keyframes marquee {
     from { transform: translateX(0); }
     to   { transform: translateX(-50%); }
   }
   @media (prefers-reduced-motion: reduce) {
     .keyword-track { animation: none; }
+  }
+
+  /* Divisória entre seções */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(27,168,144,.3) 30%, rgba(107,76,246,.3) 70%, transparent);
+    margin: 0 auto;
+    max-width: 600px;
+  }
+  .section-subtitle {
+    text-align: center;
+    font-size: .82rem;
+    color: var(--text-muted);
+    max-width: 440px;
+    margin: 0 auto 1.75rem;
+    line-height: 1.6;
   }
 
   /* Como funciona */
@@ -974,8 +992,9 @@
           </h1>
 
           <p class="hero-desc">
-            Crie uma sessão, compartilhe o link e veja em tempo real
-            quando todos estão disponíveis. Sem planilhas, sem confusão.
+            O organizador cria uma sessão e manda o link para o grupo.
+            Cada pessoa marca os horários em que pode. O CombinAí calcula
+            a sobreposição e mostra onde todo mundo coincide.
           </p>
 
           <div class="hero-actions">
@@ -1049,61 +1068,74 @@
         <div class="keyword-strip" aria-hidden="true">
           <div class="keyword-track">
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Sem planilhas
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              O organizador cria uma sessão
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Tempo real
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet)"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Gera um link e envia para o grupo
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              100% grátis
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Cada pessoa marca quando pode
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Sem cadastro manual
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet)"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+              A sobreposição aparece em tempo real
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Compartilhe por link
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polyline points="20 6 9 17 4 12"/></svg>
+              O CombinAí aponta o melhor horário
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              WhatsApp integrado
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet)"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Organizador confirma — todos veem
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Login seguro com Google
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Sem planilhas nem vai-e-vem no chat
             </span>
             <!-- duplicado para loop contínuo -->
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Sem planilhas
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              O organizador cria uma sessão
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Tempo real
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet)"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Gera um link e envia para o grupo
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              100% grátis
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Cada pessoa marca quando pode
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Sem cadastro manual
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet)"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+              A sobreposição aparece em tempo real
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Compartilhe por link
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polyline points="20 6 9 17 4 12"/></svg>
+              O CombinAí aponta o melhor horário
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              WhatsApp integrado
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--violet)"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Organizador confirma — todos veem
             </span>
+            <span class="keyword-item kw-sep" aria-hidden="true">·</span>
             <span class="keyword-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Login seguro com Google
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Sem planilhas nem vai-e-vem no chat
             </span>
           </div>
         </div>
@@ -1133,22 +1165,24 @@
 
         <!-- Papéis -->
         <section class="roles-section" aria-labelledby="roles-title">
-          <p class="section-eyebrow" id="roles-title" style="margin-bottom:1.75rem;">Para quem é?</p>
+          <div class="section-divider" aria-hidden="true"></div>
+          <p class="section-eyebrow" id="roles-title" style="margin-bottom:.5rem;margin-top:2rem;">Para quem é?</p>
+          <p class="section-subtitle">O CombinAí tem dois papéis — e qualquer pessoa com conta Google pode exercer os dois.</p>
           <div class="roles-grid">
             <div class="role-card organizer">
               <div class="role-badge">Organizadores</div>
-              <div class="role-title">Você cria e decide</div>
-              <p class="role-desc">Crie sessões, acompanhe respostas em tempo real e confirme o melhor horário.</p>
+              <div class="role-title">Quem convoca a reunião</div>
+              <p class="role-desc">Você cria uma sessão, gera um link de convite e envia para o grupo. O painel mostra em tempo real quem respondeu e qual horário tem mais sobreposição. Quando decidir, você confirma o horário e todos veem na próxima vez que abrirem o link.</p>
               <button class="btn-role primary" id="roles-login-btn" aria-label="Acessar o painel de organizador">
                 Acessar o painel →
               </button>
             </div>
             <div class="role-card">
               <div class="role-badge">Participantes</div>
-              <div class="role-title">Você responde pelo link</div>
-              <p class="role-desc">Receba o link do organizador, faça login e marque sua disponibilidade.</p>
-              <button class="btn-role muted" disabled aria-label="Participantes precisam do link do organizador — aguarde o link do organizador">
-                Aguarde o link
+              <div class="role-title">Quem recebe o convite</div>
+              <p class="role-desc">Você recebe o link pelo WhatsApp ou e-mail, faz login com o Google e marca os dias e horários em que pode. Pronto — sua resposta aparece no painel do organizador imediatamente. Você pode voltar e alterar sua disponibilidade a qualquer momento.</p>
+              <button class="btn-role muted" disabled aria-label="Participantes acessam pelo link do organizador">
+                Acesse pelo link recebido
               </button>
             </div>
           </div>
