@@ -676,7 +676,7 @@ function renderParticipationsList(items, card, container) {
       : '<span class="sc-badge sc-badge-empty">Aguardando</span>';
 
     var confirmedLine = isConf
-      ? '<div class="sc-confirmed-slot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirmado: <strong>' + escHtml((DAY_ABBR[sd.confirmed.day] || sd.confirmed.day) + ', ' + sd.confirmed.time) + '</strong></div>'
+      ? '<div class="sc-confirmed-slot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirmado: <strong>' + escHtml(SchedulingCore.formatConfirmedLabel(sd.confirmed, DAY_ABBR)) + '</strong></div>'
       : '';
 
     var el = document.createElement('div');
@@ -736,7 +736,7 @@ function renderSessionList(sessions) {
       bottomHtml =
         '<div class="sc-confirmed-slot">' +
           '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
-          ' Horário confirmado: <strong>' + escHtml((DAY_ABBR[s.confirmed.day] || s.confirmed.day) + ', ' + s.confirmed.time) + '</strong>' +
+          ' Horário confirmado: <strong>' + escHtml(SchedulingCore.formatConfirmedLabel(s.confirmed, DAY_ABBR)) + '</strong>' +
         '</div>';
     } else if (summary && summary.bestDay) {
       bottomHtml =
