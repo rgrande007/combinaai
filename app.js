@@ -25,22 +25,31 @@ try {
 } catch(e) {}
 
 // === Estado ===
-var selectedSlots = new Set();
-var isDragging    = false;
-var dragMode      = 'select';
-var currentUser   = null;
+var selectedSlots  = new Set();
+var isDragging     = false;
+var dragMode       = 'select';
+var currentUser    = null;
+var anonEnteredName = '';
 
-// === Autenticação Google ===
+function getResponseDocId(user) {
+  return user.email ? user.email : ('anon_' + user.uid);
+}
+
+// === Autenticação ===
 
 firebase.auth().onAuthStateChanged(function(user) {
   if (user) {
     currentUser = user;
+    if (!user.email && !anonEnteredName) {
+      try { anonEnteredName = localStorage.getItem('avail_name') || ''; } catch(e) {}
+    }
     showAppContent(user);
   } else {
     showAuthOverlay();
   }
 });
 
+// Google sign-in
 document.getElementById('google-signin-btn').addEventListener('click', function() {
   var btn = document.getElementById('google-signin-btn');
   btn.classList.add('loading');
@@ -60,7 +69,56 @@ document.getElementById('google-signin-btn').addEventListener('click', function(
     });
 });
 
+// Anon flow — step 1: choose anonymous
+document.getElementById('continue-anon-btn').addEventListener('click', function() {
+  document.getElementById('auth-step-choose').style.display = 'none';
+  document.getElementById('auth-step-name').style.display   = 'block';
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('anon-name-error').classList.remove('show');
+  document.getElementById('anon-name-input').focus();
+});
+
+// Anon flow — step 2: back
+document.getElementById('auth-back-btn').addEventListener('click', function() {
+  document.getElementById('auth-step-name').style.display   = 'none';
+  document.getElementById('auth-step-choose').style.display = 'block';
+});
+
+// Anon flow — step 2: continue
+function doAnonContinue() {
+  var nameInput = document.getElementById('anon-name-input');
+  var name = nameInput.value.trim();
+  var errEl = document.getElementById('anon-name-error');
+  if (!name) {
+    errEl.textContent = 'Por favor, informe seu nome para continuar.';
+    errEl.classList.add('show');
+    nameInput.focus();
+    return;
+  }
+  errEl.classList.remove('show');
+  anonEnteredName = name;
+  try { localStorage.setItem('avail_name', name); } catch(e) {}
+
+  var btn = document.getElementById('anon-continue-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  firebase.auth().signInAnonymously().catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = 'Continuar →';
+    var errEl2 = document.getElementById('anon-name-error');
+    errEl2.textContent = 'Erro ao acessar. Verifique sua conexão e tente novamente.';
+    errEl2.classList.add('show');
+  });
+}
+
+document.getElementById('anon-continue-btn').addEventListener('click', doAnonContinue);
+document.getElementById('anon-name-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); doAnonContinue(); }
+});
+
 document.getElementById('signout-btn').addEventListener('click', function() {
+  anonEnteredName = '';
   firebase.auth().signOut();
 });
 
@@ -79,15 +137,20 @@ function showAppContent(user) {
   document.getElementById('app-content').classList.add('visible');
   animateCards(document.getElementById('form-section'));
 
+  var isAnon = !user.email;
+
   // Avatar e nome no cabeçalho
   var avatarEl = document.getElementById('auth-avatar');
   var nameEl   = document.getElementById('auth-display-name');
-  if (user.photoURL) {
+  if (!isAnon && user.photoURL) {
     avatarEl.src = user.photoURL;
     avatarEl.alt = user.displayName || '';
     avatarEl.style.display = 'block';
   }
-  nameEl.textContent = user.displayName || user.email;
+  var headerName = isAnon
+    ? (anonEnteredName || user.displayName || 'Convidado')
+    : (user.displayName || user.email);
+  nameEl.textContent = headerName;
 
   // Sem sessão: mostra aviso e oculta o formulário
   if (!SESSION_ID) {
@@ -100,10 +163,13 @@ function showAppContent(user) {
   var nameInput = document.getElementById('name-input');
   var savedName = '';
   try { savedName = localStorage.getItem('avail_name') || ''; } catch(e) {}
-  nameInput.value = savedName || user.displayName || '';
+  nameInput.value = savedName || anonEnteredName || user.displayName || '';
 
+  // Email row: só para usuários Google
+  var emailRow     = document.querySelector('.ident-email-row');
   var emailDisplay = document.getElementById('email-display');
-  if (emailDisplay) emailDisplay.textContent = user.email;
+  if (emailRow) emailRow.style.display = isAnon ? 'none' : '';
+  if (!isAnon && emailDisplay) emailDisplay.textContent = user.email;
 
   loadSessionInfo();
   buildGrid();
@@ -117,6 +183,14 @@ function showAuthOverlay() {
   document.getElementById('auth-overlay').style.display = 'flex';
   document.getElementById('app-content').classList.remove('visible');
   currentUser = null;
+  // Reset to step 1
+  document.getElementById('auth-step-choose').style.display = 'block';
+  document.getElementById('auth-step-name').style.display   = 'none';
+  var anonInput = document.getElementById('anon-name-input');
+  if (anonInput) anonInput.value = '';
+  document.getElementById('anon-name-error').classList.remove('show');
+  document.getElementById('auth-error').classList.remove('show');
+  resetGoogleBtn();
 }
 
 function resetGoogleBtn() {
@@ -159,6 +233,18 @@ function loadSessionInfo() {
 // === Listener: horário confirmado (no doc da sessão) ===
 function listenForConfirmedSlot() {
   if (!SESSION_ID) return function(){};
+
+  var copyBtn = document.getElementById('copy-slot-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function() {
+      var slotText = document.getElementById('confirmed-slot-text').textContent;
+      if (!slotText) return;
+      navigator.clipboard.writeText(slotText).then(function() {
+        if (window.showToast) showToast('Horário copiado!', 'copy');
+      }).catch(function() {});
+    });
+  }
+
   return db.collection('sessions').doc(SESSION_ID).onSnapshot(function(doc) {
     var banner = document.getElementById('confirmed-banner');
     var text   = document.getElementById('confirmed-slot-text');
@@ -217,12 +303,12 @@ function showAlreadySubmittedBanner(submittedAt) {
   formSection.insertBefore(banner, formSection.firstChild);
 }
 
-// === Carrega seleção anterior (pelo e-mail como doc ID) ===
+// === Carrega seleção anterior ===
 async function loadPreviousSelection(user) {
   if (!SESSION_ID) return;
   try {
     var doc = await db.collection('sessions').doc(SESSION_ID)
-      .collection('responses').doc(user.email).get();
+      .collection('responses').doc(getResponseDocId(user)).get();
     if (doc.exists) {
       var data = doc.data();
       if (data.slots && data.slots.length > 0) {
@@ -234,10 +320,18 @@ async function loadPreviousSelection(user) {
         updateSelectedCount();
         showAlreadySubmittedBanner(data.submittedAt);
         if (data.name) {
-          var nameInput = document.getElementById('name-input');
+          var nameInput2 = document.getElementById('name-input');
           try {
-            var savedName = localStorage.getItem('avail_name') || '';
-            if (!savedName) nameInput.value = data.name;
+            var savedName2 = localStorage.getItem('avail_name') || '';
+            if (!savedName2) {
+              nameInput2.value = data.name;
+              // Restaura nome no cabeçalho para usuários anônimos que recarregaram
+              if (!user.email && !anonEnteredName) {
+                anonEnteredName = data.name;
+                var nameEl2 = document.getElementById('auth-display-name');
+                if (nameEl2 && nameEl2.textContent === 'Convidado') nameEl2.textContent = data.name;
+              }
+            }
           } catch(e) {}
         }
       }
@@ -450,26 +544,31 @@ async function saveAvailability() {
   hideMessage();
 
   try {
-    var email     = currentUser.email;
+    var isAnon    = !currentUser.email;
+    var docId     = getResponseDocId(currentUser);
     var nameLower = name.toLowerCase();
     var slots     = Array.from(selectedSlots);
     var data      = {
       name:        name,
       nameLower:   nameLower,
-      email:       email,
       slots:       slots,
       submittedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
+    if (!isAnon) {
+      data.email = currentUser.email;
+    } else {
+      data.uid = currentUser.uid;
+    }
 
-    // Usa e-mail como chave de deduplicação (doc ID)
     await db.collection('sessions').doc(SESSION_ID)
-      .collection('responses').doc(email).set(data);
+      .collection('responses').doc(docId).set(data);
 
     // Update session summary for card preview (fire-and-forget)
-    db.collection('sessions').doc(SESSION_ID).update({
-      'summary.participants': firebase.firestore.FieldValue.arrayUnion(email),
-      'summary.updatedAt':    firebase.firestore.FieldValue.serverTimestamp()
-    }).catch(function() {});
+    var summaryUpdate = { 'summary.updatedAt': firebase.firestore.FieldValue.serverTimestamp() };
+    if (!isAnon) {
+      summaryUpdate['summary.participants'] = firebase.firestore.FieldValue.arrayUnion(currentUser.email);
+    }
+    db.collection('sessions').doc(SESSION_ID).update(summaryUpdate).catch(function() {});
 
     try { localStorage.setItem('avail_name', name); } catch(e) {}
 
@@ -504,6 +603,10 @@ function showSuccessState(count) {
     var s = count !== 1 ? 's' : '';
     sub.textContent = count + ' horário' + s + ' enviado' + s + ' — o organizador verá em tempo real.';
   }
+
+  // Oculta link "painel principal" para usuários sem conta Google
+  var cta = document.querySelector('.save-success-cta');
+  if (cta) cta.style.display = (currentUser && !currentUser.email) ? 'none' : '';
 
   var state = document.getElementById('success-state');
   if (state) state.style.display = 'block';

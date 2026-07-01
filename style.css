@@ -554,6 +554,94 @@ body::before {
 .btn-google svg          { flex-shrink: 0; }
 .btn-google.loading      { opacity: .45; cursor: not-allowed; pointer-events: none; }
 
+/* Auth overlay — opção dupla (sem login + Google) */
+.auth-option-btn {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  width: 100%;
+  padding: .8rem 1rem;
+  background: rgba(27,168,144,.09);
+  border: 1.5px solid rgba(27,168,144,.28);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--t), border-color var(--t), transform .1s;
+  margin-bottom: .75rem;
+  color: #F6F7F2;
+  font-family: var(--font-body);
+}
+.auth-option-btn:hover {
+  background: rgba(27,168,144,.16);
+  border-color: rgba(27,168,144,.5);
+  transform: translateY(-1px);
+}
+.auth-option-btn:active { transform: scale(.98); }
+.auth-option-btn svg    { flex-shrink: 0; color: var(--primary); }
+.auth-option-btn strong { display: block; font-size: .9rem; font-weight: 600; line-height: 1.2; }
+.auth-option-btn small  { display: block; font-size: .72rem; color: rgba(246,247,242,.5); margin-top: .12rem; }
+.auth-option-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin: .25rem 0 .75rem;
+  color: rgba(246,247,242,.3);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.auth-or::before, .auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(246,247,242,.1);
+}
+
+.auth-back-btn {
+  background: none;
+  border: none;
+  color: rgba(246,247,242,.5);
+  font-size: .8rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: .9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  transition: color var(--t);
+}
+.auth-back-btn:hover { color: #F6F7F2; }
+
+.auth-name-label {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #F6F7F2;
+  margin-bottom: .6rem;
+  text-align: left;
+}
+
+/* Botão para copiar horário confirmado */
+.copy-slot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  border: 1px solid rgba(107,76,246,.3);
+  border-radius: var(--radius-sm);
+  background: rgba(107,76,246,.1);
+  color: var(--violet);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--t), border-color var(--t);
+  padding: 0;
+}
+.copy-slot-btn:hover { background: rgba(107,76,246,.2); border-color: rgba(107,76,246,.5); }
+
 /* auth-card hint e error mantêm cores escuras */
 .auth-card .hint { color: rgba(246,247,242,0.38); }
 .auth-card .message-error {
