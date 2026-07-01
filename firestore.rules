@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Sessões ──────────────────────────────────────────────
+    // Qualquer usuário autenticado pode criar e ler sessões.
+    // Atualizar: criador ou participante gravando só o campo summary.
+    // Excluir: somente o criador.
+    match /sessions/{sessionId} {
+      allow read   : if request.auth != null;
+      allow create : if request.auth != null;
+      allow update : if request.auth != null && (
+        request.auth.token.email == resource.data.createdBy ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['summary'])
+      );
+      allow delete : if request.auth != null
+        && request.auth.token.email == resource.data.createdBy;
+
+      // ── Respostas (por sessão) ────────────────────────────
+      // Leitura: qualquer autenticado (para exibir participantes no painel admin).
+      // Escrita: somente o dono da resposta (doc ID = email do participante).
+      match /responses/{responseId} {
+        allow read  : if request.auth != null;
+        allow write : if request.auth != null
+          && request.auth.token.email == responseId;
+      }
+    }
+
+    // ── Collection group query ────────────────────────────────
+    // Necessário para a seção "Sessões em que participei".
+    // Permite que o usuário leia APENAS suas próprias respostas
+    // em todas as sessões (doc ID == email do usuário).
+    match /{path=**}/responses/{responseId} {
+      allow read : if request.auth != null
+        && request.auth.token.email == responseId;
+    }
+
+  }
+}
