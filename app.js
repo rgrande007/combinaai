@@ -472,7 +472,7 @@ async function saveAvailability() {
     }).catch(function() {});
 
     try { localStorage.setItem('avail_name', name); } catch(e) {}
-    showMessage('Disponibilidade salva! O organizador verá sua resposta em tempo real.', 'success');
+    showSuccessState(selectedSlots.size);
 
   } catch (err) {
     console.error('Erro ao salvar:', err);
@@ -481,6 +481,31 @@ async function saveAvailability() {
     saveBtn.disabled = false;
     saveBtn.textContent = 'Salvar disponibilidade';
   }
+}
+
+function showSuccessState(count) {
+  var saveArea = document.getElementById('save-area');
+  if (saveArea) saveArea.style.display = 'none';
+
+  var sub = document.getElementById('success-sub-text');
+  if (sub) {
+    var s = count !== 1 ? 's' : '';
+    sub.textContent = count + ' horário' + s + ' enviado' + s + ' — o organizador verá em tempo real.';
+  }
+
+  var state = document.getElementById('success-state');
+  if (state) state.style.display = 'block';
+
+  var stickyBar = document.getElementById('sticky-save-bar');
+  if (stickyBar) stickyBar.classList.remove('sticky-save-bar--visible');
+}
+
+var editResponseBtn = document.getElementById('edit-response-btn');
+if (editResponseBtn) {
+  editResponseBtn.addEventListener('click', function() {
+    document.getElementById('success-state').style.display = 'none';
+    document.getElementById('save-area').style.display = 'block';
+  });
 }
 
 function showMessage(text, type) {

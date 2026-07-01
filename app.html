@@ -189,27 +189,55 @@
 
         <!-- Ações -->
         <div class="card">
-          <button
-            class="btn btn-primary"
-            id="save-btn"
-            style="width:100%;padding:.9rem 1.25rem;font-size:1rem;"
-            aria-label="Salvar minha disponibilidade de horários"
-          >
-            Salvar disponibilidade
-          </button>
 
-          <div id="message" class="message" role="status" aria-live="polite"></div>
-
-          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;">
+          <!-- Estado normal: botão de salvar -->
+          <div id="save-area">
             <button
-              class="btn btn-secondary"
-              id="clear-btn"
-              style="font-size:.8rem;padding:.4rem .9rem;"
-              aria-label="Limpar todos os horários selecionados"
+              class="btn btn-primary"
+              id="save-btn"
+              style="width:100%;padding:.9rem 1.25rem;font-size:1rem;"
+              aria-label="Salvar minha disponibilidade de horários"
             >
-              Limpar seleção
+              Salvar disponibilidade
             </button>
+
+            <div id="message" class="message" role="status" aria-live="polite"></div>
+
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;">
+              <button
+                class="btn btn-secondary"
+                id="clear-btn"
+                style="font-size:.8rem;padding:.4rem .9rem;"
+                aria-label="Limpar todos os horários selecionados"
+              >
+                Limpar seleção
+              </button>
+            </div>
           </div>
+
+          <!-- Estado de sucesso: após envio -->
+          <div id="success-state" style="display:none;" role="status" aria-live="polite">
+            <div class="save-success">
+              <div class="save-success-ico" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div class="save-success-title">Disponibilidade registrada!</div>
+              <p class="save-success-sub" id="success-sub-text"></p>
+              <div class="save-success-actions">
+                <a href="/" class="btn btn-primary save-success-cta">
+                  Ir para o painel principal →
+                </a>
+                <button class="btn btn-secondary save-success-edit" id="edit-response-btn"
+                        aria-label="Voltar para editar disponibilidade">
+                  Alterar disponibilidade
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </div><!-- /form-section -->
