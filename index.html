@@ -1106,13 +1106,8 @@
     color: rgba(255,255,255,.72);
     line-height: 1.4;
   }
-  .csh-form {
-    display: flex;
-    gap: .55rem;
-    align-items: center;
-    position: relative;
-    z-index: 1;
-  }
+  .csh-form { display: flex; flex-direction: column; gap: .7rem; position: relative; z-index: 1; }
+  .csh-form-row { display: flex; gap: .55rem; align-items: center; }
   .csh-input {
     flex: 1;
     background: rgba(255,255,255,.18);
@@ -1132,6 +1127,7 @@
     background: rgba(255,255,255,.26);
     border-color: rgba(255,255,255,.6);
   }
+  select.csh-input { flex: none; cursor: pointer; padding: .55rem .7rem; }
   .csh-btn {
     display: inline-flex; align-items: center; gap: .4rem;
     padding: .68rem 1.15rem;
@@ -1156,8 +1152,33 @@
     border-color: rgba(10,107,92,.18) !important;
     border-top-color: #0A6B5C !important;
   }
+  .csh-options { display: flex; flex-wrap: wrap; gap: .7rem 1rem; align-items: flex-end; }
+  .csh-field { display: flex; flex-direction: column; gap: .3rem; }
+  .csh-field-label {
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: rgba(255,255,255,.72);
+  }
+  .csh-days { display: flex; gap: .4rem; border: none; margin: 0; padding: 0; }
+  .csh-days legend { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,.72); padding: 0 0 .3rem; }
+  .csh-day-chk {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .78rem; color: #fff;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.24);
+    border-radius: var(--radius-sm);
+    padding: .4rem .6rem;
+    cursor: pointer;
+  }
+  .csh-options-error {
+    font-size: .78rem; color: #FFD9D9;
+    background: rgba(220,38,38,.28);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: var(--radius-sm);
+    padding: .5rem .75rem;
+    margin: 0;
+  }
   @media (max-width: 520px) {
-    .csh-form { flex-direction: column; }
+    .csh-form-row { flex-direction: column; }
     .csh-btn { width: 100%; justify-content: center; }
   }
 
@@ -1547,18 +1568,55 @@
             </div>
           </div>
           <div class="csh-form" role="form" aria-label="Criar nova sessão">
-            <input type="text" id="session-title-input" class="csh-input"
-                   placeholder="Ex: Reunião de alinhamento Q3"
-                   maxlength="100" autocomplete="off"
-                   aria-label="Nome da nova reunião" />
-            <button class="csh-btn" id="create-session-btn"
-                    aria-label="Criar sessão e gerar link de convite">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              Criar sessão
-            </button>
+            <div class="csh-form-row">
+              <input type="text" id="session-title-input" class="csh-input"
+                     placeholder="Ex: Reunião de alinhamento Q3"
+                     maxlength="100" autocomplete="off"
+                     aria-label="Nome da nova reunião" />
+            </div>
+
+            <div class="csh-options">
+              <label class="csh-field">
+                <span class="csh-field-label">Duração</span>
+                <select id="session-duration-input" class="csh-input" aria-label="Duração da reunião">
+                  <option value="30">30 minutos</option>
+                  <option value="60" selected>1 hora</option>
+                  <option value="90">1h30</option>
+                  <option value="120">2 horas</option>
+                </select>
+              </label>
+
+              <fieldset class="csh-days" id="session-days-input" aria-label="Dias considerados">
+                <legend>Dias</legend>
+                <label class="csh-day-chk"><input type="checkbox" value="segunda" checked> Seg</label>
+                <label class="csh-day-chk"><input type="checkbox" value="terca" checked> Ter</label>
+                <label class="csh-day-chk"><input type="checkbox" value="quarta" checked> Qua</label>
+                <label class="csh-day-chk"><input type="checkbox" value="quinta" checked> Qui</label>
+                <label class="csh-day-chk"><input type="checkbox" value="sexta" checked> Sex</label>
+              </fieldset>
+
+              <label class="csh-field">
+                <span class="csh-field-label">Início</span>
+                <select id="session-start-input" class="csh-input" aria-label="Horário de início"></select>
+              </label>
+              <label class="csh-field">
+                <span class="csh-field-label">Fim</span>
+                <select id="session-end-input" class="csh-input" aria-label="Horário de fim"></select>
+              </label>
+            </div>
+
+            <p class="csh-options-error" id="session-options-error" role="alert" style="display:none;"></p>
+
+            <div class="csh-form-row">
+              <button class="csh-btn" id="create-session-btn"
+                      aria-label="Criar sessão e gerar link de convite">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Criar sessão
+              </button>
+            </div>
           </div>
         </div>
 
