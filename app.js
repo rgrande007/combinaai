@@ -472,6 +472,18 @@ async function saveAvailability() {
     }).catch(function() {});
 
     try { localStorage.setItem('avail_name', name); } catch(e) {}
+
+    // Salva sessão participada no localStorage (fallback para o painel do organizador)
+    try {
+      var sessionTitle = document.getElementById('page-title').textContent || SESSION_ID;
+      var participated = JSON.parse(localStorage.getItem('participated_sessions') || '[]');
+      var newEntry = { sessionId: SESSION_ID, title: sessionTitle, votedAt: Date.now() };
+      participated = participated.filter(function(p) { return p.sessionId !== SESSION_ID; });
+      participated.unshift(newEntry);
+      if (participated.length > 20) participated = participated.slice(0, 20);
+      localStorage.setItem('participated_sessions', JSON.stringify(participated));
+    } catch(e) {}
+
     showSuccessState(selectedSlots.size);
 
   } catch (err) {

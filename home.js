@@ -535,10 +535,14 @@ function startParticipationsList(userEmail) {
   var container = document.getElementById('participations-container');
   if (!card) return;
 
+  // Tenta collection group query (requer índice implantado no Firestore)
   db.collectionGroup('responses').where('email', '==', userEmail)
     .get()
     .then(function(snap) {
-      if (snap.empty) { card.style.display = 'none'; return; }
+      if (snap.empty) {
+        loadParticipationsFromStorage(userEmail, card, container);
+        return;
+      }
       var items = [];
       var pending = snap.docs.length;
       snap.docs.forEach(function(doc) {
@@ -555,7 +559,39 @@ function startParticipationsList(userEmail) {
         }).catch(function() { pending--; if (pending === 0) renderParticipationsList(items, card, container); });
       });
     })
-    .catch(function() { if (card) card.style.display = 'none'; });
+    .catch(function() {
+      // Índice ausente ou regras não implantadas — usa localStorage como fallback
+      loadParticipationsFromStorage(userEmail, card, container);
+    });
+}
+
+function loadParticipationsFromStorage(userEmail, card, container) {
+  var localEntries = [];
+  try { localEntries = JSON.parse(localStorage.getItem('participated_sessions') || '[]'); } catch(e) {}
+  if (!localEntries.length) { if (card) card.style.display = 'none'; return; }
+
+  var items   = [];
+  var pending = localEntries.length;
+  localEntries.forEach(function(entry) {
+    Promise.all([
+      db.collection('sessions').doc(entry.sessionId).get(),
+      db.collection('sessions').doc(entry.sessionId).collection('responses').doc(userEmail).get()
+    ]).then(function(results) {
+      var sDoc = results[0], rDoc = results[1];
+      if (sDoc.exists) {
+        var sData = sDoc.data();
+        var rd    = rDoc.exists ? rDoc.data() : { slots: [], name: '', email: userEmail };
+        if ((sData.createdBy || '').toLowerCase() !== userEmail.toLowerCase()) {
+          items.push({ rd: rd, sd: sData, sessionId: entry.sessionId });
+        }
+      }
+      pending--;
+      if (pending === 0) renderParticipationsList(items, card, container);
+    }).catch(function() {
+      pending--;
+      if (pending === 0) renderParticipationsList(items, card, container);
+    });
+  });
 }
 
 function renderParticipationsList(items, card, container) {
