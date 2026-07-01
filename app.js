@@ -30,6 +30,7 @@ var isDragging     = false;
 var dragMode       = 'select';
 var currentUser    = null;
 var anonEnteredName = '';
+var currentSessionConfig = SchedulingCore.getSessionConfig({}, DAYS, ALL_TIMES);
 
 function getResponseDocId(user) {
   return user.email ? user.email : ('anon_' + user.uid);
@@ -171,10 +172,11 @@ function showAppContent(user) {
   if (emailRow) emailRow.style.display = isAnon ? 'none' : '';
   if (!isAnon && emailDisplay) emailDisplay.textContent = user.email;
 
-  loadSessionInfo();
-  buildGrid();
-  updateSelectedCount();
-  loadPreviousSelection(user);
+  loadSessionInfo().then(function() {
+    buildGrid();
+    updateSelectedCount();
+    loadPreviousSelection(user);
+  });
   listenForConfirmedSlot();
   loadRespondents();
 }
@@ -208,7 +210,7 @@ function resetGoogleBtn() {
 
 // === Carrega título da sessão ===
 function loadSessionInfo() {
-  db.collection('sessions').doc(SESSION_ID).get().then(function(doc) {
+  return db.collection('sessions').doc(SESSION_ID).get().then(function(doc) {
     if (!doc.exists) {
       document.getElementById('no-session-card').innerHTML =
         '<div style="text-align:center;padding:1.5rem 1rem;">' +
@@ -220,10 +222,16 @@ function loadSessionInfo() {
       document.getElementById('form-section').style.display = 'none';
       return;
     }
-    var title = doc.data().title || '';
+    var data = doc.data();
+    currentSessionConfig = SchedulingCore.getSessionConfig(data, DAYS, ALL_TIMES);
+    var title = data.title || '';
     if (!title) return;
     document.getElementById('page-title').textContent = title;
-    document.getElementById('page-subtitle').textContent = 'Marque os horários em que você está disponível';
+    var durationLabel = currentSessionConfig.duration >= 60
+      ? (currentSessionConfig.duration / 60) + 'h' + (currentSessionConfig.duration % 60 ? (currentSessionConfig.duration % 60) : '')
+      : currentSessionConfig.duration + 'min';
+    document.getElementById('page-subtitle').textContent =
+      'Marque os horários em que você está disponível (reunião de ' + durationLabel + ')';
     document.title = title + ' — Disponibilidade';
   }).catch(function() {
     showMessage('Erro ao carregar a sessão. Verifique sua conexão e recarregue a página.', 'error');
@@ -250,7 +258,7 @@ function listenForConfirmedSlot() {
     var text   = document.getElementById('confirmed-slot-text');
     if (doc.exists && doc.data().confirmed) {
       var c = doc.data().confirmed;
-      text.textContent = (DAY_LABELS_FULL_P[c.day] || c.day) + ', ' + c.time;
+      text.textContent = SchedulingCore.formatConfirmedLabel(c, DAY_LABELS_FULL_P);
       banner.style.display = 'block';
     } else {
       banner.style.display = 'none';
@@ -352,6 +360,7 @@ function buildGrid() {
   var gridHead  = document.getElementById('grid-head');
   var gridBody  = document.getElementById('grid-body');
   var gridTable = document.getElementById('grid-table');
+  var config    = currentSessionConfig;
 
   gridHead.innerHTML = '';
   gridBody.innerHTML = '';
@@ -359,17 +368,21 @@ function buildGrid() {
   var headerRow = document.createElement('tr');
   var emptyTh   = document.createElement('th');
   headerRow.appendChild(emptyTh);
-  DAYS.forEach(function(day) {
+  config.days.forEach(function(day) {
     var th = document.createElement('th');
     th.textContent = DAY_LABELS[day];
     headerRow.appendChild(th);
   });
   gridHead.appendChild(headerRow);
 
-  appendSectionRow('Manhã', gridBody);
-  MORNING_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
-  appendSectionRow('Tarde', gridBody);
-  AFTERNOON_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
+  if (config.isLegacyGrid) {
+    appendSectionRow('Manhã', gridBody);
+    MORNING_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
+    appendSectionRow('Tarde', gridBody);
+    AFTERNOON_TIMES.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
+  } else {
+    config.times.forEach(function(t) { gridBody.appendChild(buildTimeRow(t)); });
+  }
 
   gridTable.addEventListener('mousedown', onMouseDown);
   gridTable.addEventListener('mousemove', onMouseMove);
@@ -383,7 +396,7 @@ function appendSectionRow(label, gridBody) {
   var tr = document.createElement('tr');
   tr.className = 'section-row';
   var td = document.createElement('td');
-  td.colSpan = DAYS.length + 1;
+  td.colSpan = currentSessionConfig.days.length + 1;
   td.textContent = label;
   tr.appendChild(td);
   gridBody.appendChild(tr);
@@ -395,7 +408,7 @@ function buildTimeRow(time) {
   timeTd.className   = 'time-label';
   timeTd.textContent = time;
   tr.appendChild(timeTd);
-  DAYS.forEach(function(day) {
+  currentSessionConfig.days.forEach(function(day) {
     var td    = document.createElement('td');
     td.className = 'slot-cell';
     var inner = document.createElement('div');
