@@ -652,38 +652,6 @@
   .session-active-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: flex-start; }
   .session-active-actions .btn { min-height: 36px; touch-action: manipulation; }
 
-  /* ── Não autorizado ── */
-  .denied-card {
-    max-width: 420px;
-    margin: 6rem auto;
-    text-align: center;
-    padding: 2.5rem 2rem;
-    background: var(--surface);
-    border: 1px solid var(--border-mid);
-    border-radius: var(--radius);
-  }
-  .denied-icon { color: var(--text-muted); margin-bottom: 1rem; display: flex; justify-content: center; }
-  .denied-title {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: .5rem;
-  }
-  .denied-desc { font-size: .85rem; color: var(--text-muted); line-height: 1.6; }
-  .btn-signout-denied {
-    margin-top: 1.25rem;
-    padding: .55rem 1.25rem;
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    border: 1px solid var(--border-mid);
-    color: var(--text);
-    font-size: .85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--t);
-  }
-  .btn-signout-denied:hover { background: var(--surface-3); }
-
   /* Tema claro — overrides home */
   [data-theme="light"] .landing-header {
     background: rgba(246,247,242,.9);
@@ -920,6 +888,76 @@
   .session-list-item:hover { box-shadow: 0 4px 20px rgba(27,168,144,.12); }
   .session-list-title { font-size: .9rem; letter-spacing: -.01em; }
 
+  /* ══════════════════════════════════════
+     SESSION CARDS (rich preview)
+  ══════════════════════════════════════ */
+  .session-card {
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem 1rem;
+    cursor: pointer;
+    transition: border-color var(--t), transform var(--t), box-shadow var(--t);
+    margin-bottom: .65rem;
+    outline: none;
+  }
+  .session-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 6px 22px rgba(27,168,144,.14); }
+  .session-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .session-card:last-child { margin-bottom: 0; }
+
+  .sc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; margin-bottom: .25rem; }
+  .sc-title { font-family: var(--font-display); font-weight: 700; font-size: .9rem; color: var(--text); line-height: 1.3; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sc-date { font-size: .7rem; color: var(--text-dim); margin-bottom: .7rem; }
+
+  /* Status badges */
+  .sc-badge { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; font-size: .65rem; font-weight: 700; padding: .2rem .6rem; white-space: nowrap; flex-shrink: 0; }
+  .sc-badge-conf { background: rgba(27,168,144,.15); color: var(--primary); border: 1px solid rgba(27,168,144,.3); }
+  .sc-badge-live { background: rgba(27,168,144,.1); color: var(--primary); border: 1px solid rgba(27,168,144,.2); }
+  .sc-badge-empty { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+  .sc-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); flex-shrink: 0; animation: liveGlow 2s ease-in-out infinite; }
+
+  /* Mini heatmap */
+  .sc-days { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-bottom: 3px; }
+  .sc-days span { font-size: .58rem; font-weight: 700; text-align: center; color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; }
+  .sc-heatmap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-bottom: .7rem; }
+  .sc-cell { height: 18px; border-radius: 4px; transition: opacity .2s; }
+  .sc-h0 { background: var(--surface-2); border: 1px solid var(--border); }
+  .sc-h1 { background: #FDE68A; border: 1px solid #F59E0B; }
+  .sc-h2 { background: #AEE1D4; border: 1px solid #85C8B8; }
+  .sc-h3 { background: var(--primary); border: 1px solid var(--primary-dark); }
+
+  /* Best slot / confirmed line */
+  .sc-best-slot { font-size: .72rem; color: var(--text-muted); display: flex; align-items: center; gap: .3rem; margin-bottom: .75rem; }
+  .sc-best-slot svg { flex-shrink: 0; color: var(--primary); }
+  .sc-best-slot strong { color: var(--text); }
+  .sc-best-score { color: var(--text-dim); }
+  .sc-confirmed-slot { font-size: .72rem; color: var(--primary); display: flex; align-items: center; gap: .3rem; margin-bottom: .75rem; font-weight: 600; }
+  .sc-confirmed-slot svg { flex-shrink: 0; }
+
+  /* Action row */
+  .sc-actions { display: flex; align-items: center; gap: .4rem; border-top: 1px solid var(--border); padding-top: .75rem; }
+  .sc-act { display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font-display); font-weight: 600; transition: background var(--t), color var(--t), border-color var(--t); }
+  .sc-act-icon { width: 32px; height: 32px; background: transparent; border: 1px solid var(--border-mid); color: var(--text-muted); }
+  .sc-act-icon:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+  .sc-act-delete:hover { background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.3); color: #EF4444; }
+  .sc-act-open { margin-left: auto; background: var(--primary); color: #fff; border: none; padding: .38rem .85rem; font-size: .78rem; gap: .3rem; }
+  .sc-act-open:hover { background: var(--primary-dark); }
+
+  /* Empty state */
+  .session-empty-state { text-align: center; padding: 1.5rem 1rem; color: var(--text-muted); }
+  .session-empty-state svg { margin-bottom: .75rem; color: var(--text-dim); }
+  .session-empty-state p { font-size: .85rem; line-height: 1.6; }
+
+  /* Participation cards */
+  .participation-card { background: var(--surface); border: 1px solid var(--border-mid); border-radius: var(--radius); padding: 1rem 1.1rem; margin-bottom: .65rem; }
+  .participation-card:last-child { margin-bottom: 0; }
+  .pc-stats { font-size: .75rem; color: var(--text-muted); margin-bottom: .3rem; }
+  .pc-link { font-size: .78rem; margin-top: .65rem; display: inline-flex; align-items: center; gap: .35rem; }
+
+  [data-theme="light"] .session-card { background: #fff; }
+  [data-theme="light"] .participation-card { background: #fff; }
+  [data-theme="light"] .sc-h0 { background: #F0F4F3; border-color: #D0E4DE; }
+
   /* Guard reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     .hero-av { animation: none !important; opacity: .8; }
@@ -962,7 +1000,7 @@
         </a>
         <nav class="landing-nav" aria-label="Navegação principal">
           <button class="btn-theme-toggle" id="theme-toggle-landing" aria-label="Alternar tema"></button>
-          <button class="btn-nav-login" id="header-login-btn" aria-label="Entrar como organizador">
+          <button class="btn-nav-login" id="header-login-btn" aria-label="Entrar com Google">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -1311,8 +1349,13 @@
         </div>
 
         <div class="card" id="session-list-card" style="display:none;">
-          <div class="card-title">Sessões anteriores</div>
+          <div class="card-title">Minhas sessões</div>
           <div id="session-list-container"></div>
+        </div>
+
+        <div class="card" id="participations-card" style="display:none;">
+          <div class="card-title">Sessões em que participei</div>
+          <div id="participations-container"></div>
         </div>
 
       </div>
@@ -1447,27 +1490,6 @@
       </div><!-- /session-monitor-view -->
 
     </main>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       ESTADO 3: Não autorizado
-  ═══════════════════════════════════════ -->
-  <div id="not-authorized" class="page-state">
-    <div class="denied-card">
-      <div class="denied-icon" aria-hidden="true">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </div>
-      <div class="denied-title">Acesso não autorizado</div>
-      <p class="denied-desc" id="denied-email-msg">
-        Esta conta não tem permissão de administrador.
-        Solicite ao responsável que adicione seu e-mail.
-      </p>
-      <button class="btn-signout-denied" id="signout-denied-btn">Sair e usar outra conta</button>
-    </div>
   </div>
 
   <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>

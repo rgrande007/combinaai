@@ -382,9 +382,13 @@ function applyToggle(slotId) {
 
 function updateSelectedCount() {
   var n = selectedSlots.size;
-  selectedCountEl.textContent = n === 0
+  var label = n === 0
     ? 'Nenhum horário selecionado.'
     : n + ' horário' + (n !== 1 ? 's' : '') + ' selecionado' + (n !== 1 ? 's' : '') + '.';
+  selectedCountEl.textContent = label;
+  // sync sticky bar
+  var stickyCount = document.getElementById('sticky-count');
+  if (stickyCount) stickyCount.textContent = n > 0 ? n + ' selecionado' + (n !== 1 ? 's' : '') : 'Selecione horários';
 }
 
 // === Limpar seleção ===
@@ -396,6 +400,22 @@ clearBtn.addEventListener('click', function() {
   selectedSlots.clear();
   updateSelectedCount();
 });
+
+// === Sticky save bar (mobile) ===
+(function() {
+  var stickyBar = document.getElementById('sticky-save-bar');
+  var stickyBtn = document.getElementById('sticky-save-btn');
+  if (!stickyBar || !stickyBtn) return;
+  stickyBtn.addEventListener('click', saveAvailability);
+  if ('IntersectionObserver' in window) {
+    var obs = new IntersectionObserver(function(entries) {
+      var visible = entries[0].isIntersecting;
+      stickyBar.classList.toggle('sticky-save-bar--visible', !visible);
+      stickyBar.setAttribute('aria-hidden', visible ? 'true' : 'false');
+    }, { threshold: 0.5 });
+    obs.observe(saveBtn);
+  }
+})();
 
 // === Salvar no Firestore (subcoleção da sessão) ===
 saveBtn.addEventListener('click', saveAvailability);
@@ -445,8 +465,14 @@ async function saveAvailability() {
     await db.collection('sessions').doc(SESSION_ID)
       .collection('responses').doc(email).set(data);
 
+    // Update session summary for card preview (fire-and-forget)
+    db.collection('sessions').doc(SESSION_ID).update({
+      'summary.participants': firebase.firestore.FieldValue.arrayUnion(email),
+      'summary.updatedAt':    firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function() {});
+
     try { localStorage.setItem('avail_name', name); } catch(e) {}
-    showMessage('Disponibilidade registrada com sucesso!', 'success');
+    showMessage('Disponibilidade salva! O organizador verá sua resposta em tempo real.', 'success');
 
   } catch (err) {
     console.error('Erro ao salvar:', err);

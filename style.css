@@ -963,6 +963,46 @@ body::before {
 }
 
 /* =============================================
+   Sticky save bar (app.html, mobile)
+   ============================================= */
+.sticky-save-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border-bright);
+  box-shadow: 0 -8px 24px rgba(0,0,0,.18);
+  transform: translateY(110%);
+  transition: transform .25s cubic-bezier(.22,.68,0,1.2);
+  pointer-events: none;
+}
+.sticky-save-bar--visible {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.sticky-count {
+  flex: 1;
+  font-size: .78rem;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sticky-save-btn {
+  flex-shrink: 0;
+  padding: .65rem 1.25rem;
+  font-size: .88rem;
+}
+/* Only show on mobile */
+@media (min-width: 640px) { .sticky-save-bar { display: none !important; } }
+
+/* =============================================
    Responsividade
    ============================================= */
 @media (max-width: 600px) {

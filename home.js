@@ -1,10 +1,3 @@
-// ============================================================
-// ADMINS AUTORIZADOS
-// ============================================================
-var ADMIN_EMAILS = [
-  'rafaelgrande@usp.br'
-];
-
 // === Constantes ===
 var DAYS = ['segunda', 'terca', 'quarta', 'quinta', 'sexta'];
 var DAY_LABELS = { 'segunda':'Segunda','terca':'Terça','quarta':'Quarta','quinta':'Quinta','sexta':'Sexta' };
@@ -31,10 +24,8 @@ var adminInitialized       = false;
 var authLoading   = document.getElementById('auth-loading');
 var landingEl     = document.getElementById('landing');
 var adminPanelEl  = document.getElementById('admin-panel');
-var notAuthEl     = document.getElementById('not-authorized');
-
 function showState(state) {
-  [landingEl, notAuthEl].forEach(function(el) { el.classList.remove('active'); });
+  landingEl.classList.remove('active');
   adminPanelEl.classList.remove('visible');
 
   authLoading.classList.add('hide');
@@ -45,8 +36,6 @@ function showState(state) {
   } else if (state === 'admin') {
     adminPanelEl.classList.add('visible');
     setTimeout(function() { animateCards(document.getElementById('session-manager')); }, 220);
-  } else if (state === 'denied') {
-    notAuthEl.classList.add('active');
   }
 }
 
@@ -54,28 +43,11 @@ function showState(state) {
 // AUTENTICAÇÃO
 // ============================================================
 firebase.auth().onAuthStateChanged(function(user) {
-  if (!user) {
-    showState('landing');
-    return;
-  }
-
-  if (isAuthorized(user.email)) {
-    showState('admin');
-    populateAdminHeader(user);
-    initAdmin(user);
-  } else {
-    document.getElementById('denied-email-msg').textContent =
-      'A conta ' + user.email + ' não tem permissão de administrador. ' +
-      'Solicite ao responsável que adicione seu e-mail.';
-    showState('denied');
-  }
+  if (!user) { showState('landing'); return; }
+  showState('admin');
+  populateAdminHeader(user);
+  initAdmin(user);
 });
-
-function isAuthorized(email) {
-  return ADMIN_EMAILS
-    .map(function(e) { return e.toLowerCase(); })
-    .indexOf((email || '').toLowerCase()) !== -1;
-}
 
 function triggerGoogleLogin(btn) {
   if (btn) {
@@ -110,9 +82,6 @@ function triggerGoogleLogin(btn) {
 });
 
 document.getElementById('signout-btn').addEventListener('click', function() {
-  doSignout();
-});
-document.getElementById('signout-denied-btn').addEventListener('click', function() {
   doSignout();
 });
 
@@ -252,6 +221,7 @@ function initAdmin(user) {
   }
 
   startSessionList(user.email);
+  startParticipationsList(user.email);
   checkLegacyData();
 
   var urlSessionId = null;
@@ -475,6 +445,17 @@ function selectSession(sessionId, title) {
         .filter(function(r) { return r.name; })
         .sort(function(a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
       renderAll(currentResponses);
+      // Write compact summary for card preview
+      var sd = getSlotData(currentResponses);
+      var slotsCompact = {};
+      Object.keys(sd.counts).forEach(function(k) { if (sd.counts[k] > 0) slotsCompact[k] = sd.counts[k]; });
+      var sumUpdate = { totalResponses: currentResponses.length, slots: slotsCompact, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      if (sd.maxCount > 0) {
+        var bestKey = null;
+        DAYS.forEach(function(d) { ALL_TIMES.forEach(function(t) { var k = d+'_'+t; if (!bestKey || sd.counts[k] > sd.counts[bestKey]) bestKey = k; }); });
+        if (bestKey) { var bp = bestKey.split('_'); sumUpdate.bestDay = bp[0]; sumUpdate.bestTime = bp[1]; sumUpdate.bestCount = sd.counts[bestKey]; }
+      }
+      db.collection('sessions').doc(sessionId).update({ summary: sumUpdate }).catch(function(){});
     }, function(err) { console.error('Erro respostas:', err); });
 
   if (sessionDocUnsubscribe) sessionDocUnsubscribe();
@@ -539,69 +520,218 @@ function startSessionList(adminEmail) {
     }, function(err) { console.error('Erro lista sessões:', err); });
 }
 
-function renderSessionList(sessions) {
-  var card      = document.getElementById('session-list-card');
-  var container = document.getElementById('session-list-container');
-  if (sessions.length === 0) { card.style.display = 'none'; return; }
+function startParticipationsList(userEmail) {
+  var card      = document.getElementById('participations-card');
+  var container = document.getElementById('participations-container');
+  if (!card) return;
 
+  db.collectionGroup('responses').where('email', '==', userEmail)
+    .get()
+    .then(function(snap) {
+      if (snap.empty) { card.style.display = 'none'; return; }
+      var items = [];
+      var pending = snap.docs.length;
+      snap.docs.forEach(function(doc) {
+        var sid = doc.ref.parent.parent.id;
+        db.collection('sessions').doc(sid).get().then(function(sDoc) {
+          if (sDoc.exists) {
+            var sData = sDoc.data();
+            if ((sData.createdBy || '').toLowerCase() !== userEmail.toLowerCase()) {
+              items.push({ rd: doc.data(), sd: sData, sessionId: sid });
+            }
+          }
+          pending--;
+          if (pending === 0) renderParticipationsList(items, card, container);
+        }).catch(function() { pending--; if (pending === 0) renderParticipationsList(items, card, container); });
+      });
+    })
+    .catch(function() { if (card) card.style.display = 'none'; });
+}
+
+function renderParticipationsList(items, card, container) {
+  if (!items.length) { card.style.display = 'none'; return; }
+  var titleEl = card.querySelector('.card-title');
+  if (titleEl) titleEl.textContent = 'Sessões em que participei (' + items.length + ')';
   card.style.display = 'block';
   container.innerHTML = '';
-  sessions.forEach(function(s) {
-    var item = document.createElement('div');
-    item.className = 'session-list-item';
+  items.forEach(function(item) {
+    var rd = item.rd, sd = item.sd, sid = item.sessionId;
+    var isConf = sd.confirmed && sd.confirmed.day;
+    var slotCount = (rd.slots || []).length;
+    var orgName = (sd.createdBy || '').split('@')[0];
 
-    var isConfirmed = s.confirmed && s.confirmed.day;
-    var confirmedBadge = isConfirmed
-      ? '<span class="session-status-badge session-badge-confirmed">✓ Confirmada</span>'
+    var badgeHtml = isConf
+      ? '<span class="sc-badge sc-badge-conf"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirmada</span>'
+      : '<span class="sc-badge sc-badge-empty">Aguardando</span>';
+
+    var confirmedLine = isConf
+      ? '<div class="sc-confirmed-slot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirmado: <strong>' + escHtml((DAY_ABBR[sd.confirmed.day] || sd.confirmed.day) + ', ' + sd.confirmed.time) + '</strong></div>'
       : '';
 
-    item.innerHTML =
-      '<div class="session-list-dot" aria-hidden="true"></div>' +
-      '<button class="session-list-info-btn" aria-label="Abrir sessão: ' + escHtml(s.title) + '">' +
-        '<div class="session-list-info">' +
-          '<div class="session-list-title">' + escHtml(s.title) + '</div>' +
-          '<div class="session-list-meta">' + formatDate(s.createdAt) + confirmedBadge + '</div>' +
-        '</div>' +
-        '<svg class="session-list-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
-      '</button>' +
-      '<div class="session-list-actions">' +
-        '<button class="session-action-btn session-copy-btn" aria-label="Copiar link de convite" title="Copiar link">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-        '</button>' +
-        '<button class="session-action-btn session-edit-btn" aria-label="Renomear sessão" title="Renomear">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
-        '</button>' +
-        '<button class="session-action-btn session-delete-btn" aria-label="Excluir sessão" title="Excluir">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
-        '</button>' +
-      '</div>';
-
-    item.querySelector('.session-list-info-btn').addEventListener('click', function() {
-      selectSession(s.id, s.title);
-    });
-    item.querySelector('.session-copy-btn').addEventListener('click', function(e) {
-      e.stopPropagation();
-      copySessionLink(s.id);
-    });
-    item.querySelector('.session-edit-btn').addEventListener('click', function(e) {
-      e.stopPropagation();
-      renameSession(s.id, s.title);
-    });
-    item.querySelector('.session-delete-btn').addEventListener('click', function(e) {
-      e.stopPropagation();
-      deleteSession(s.id, s.title);
-    });
-
-    container.appendChild(item);
+    var el = document.createElement('div');
+    el.className = 'participation-card';
+    el.innerHTML =
+      '<div class="sc-top"><div class="sc-title">' + escHtml(sd.title || 'Sessão') + '</div>' + badgeHtml + '</div>' +
+      '<div class="sc-date">Organizado por <strong>' + escHtml(orgName) + '</strong></div>' +
+      '<div class="pc-stats">Você marcou ' + slotCount + ' horário' + (slotCount !== 1 ? 's' : '') + '</div>' +
+      confirmedLine +
+      '<a href="app.html?sessao=' + escHtml(sid) + '" class="btn btn-secondary pc-link">' +
+        'Ver ou alterar minha disponibilidade' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+      '</a>';
+    container.appendChild(el);
   });
 }
 
-function formatDate(ts) {
-  if (!ts || !ts.seconds) return 'agora';
-  return new Date(ts.seconds * 1000).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
+function renderSessionList(sessions) {
+  var listCard  = document.getElementById('session-list-card');
+  var container = document.getElementById('session-list-container');
+
+  if (sessions.length === 0) {
+    listCard.style.display = 'block';
+    container.innerHTML =
+      '<div class="session-empty-state">' +
+        '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>' +
+        '<p>Nenhuma sessão criada ainda.<br><span class="hint">Crie sua primeira sessão acima.</span></p>' +
+      '</div>';
+    return;
+  }
+
+  var titleEl = listCard.querySelector('.card-title');
+  if (titleEl) titleEl.textContent = 'Minhas sessões (' + sessions.length + ')';
+
+  listCard.style.display = 'block';
+  container.innerHTML = '';
+
+  sessions.forEach(function(s) {
+    var summary   = s.summary || null;
+    var total     = summary
+      ? (summary.participants ? summary.participants.length : (summary.totalResponses || 0))
+      : 0;
+    var isConf    = s.confirmed && s.confirmed.day;
+
+    // Status badge
+    var badgeHtml = isConf
+      ? '<span class="sc-badge sc-badge-conf">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+          ' Confirmada</span>'
+      : (total > 0
+          ? '<span class="sc-badge sc-badge-live"><span class="sc-live-dot"></span>' + total + ' responderam</span>'
+          : '<span class="sc-badge sc-badge-empty">Aguardando</span>');
+
+    // Best/confirmed slot line
+    var bottomHtml = '';
+    if (isConf) {
+      bottomHtml =
+        '<div class="sc-confirmed-slot">' +
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+          ' Horário confirmado: <strong>' + escHtml((DAY_ABBR[s.confirmed.day] || s.confirmed.day) + ', ' + s.confirmed.time) + '</strong>' +
+        '</div>';
+    } else if (summary && summary.bestDay) {
+      bottomHtml =
+        '<div class="sc-best-slot">' +
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+          ' Melhor opção: <strong>' + escHtml(DAY_ABBR[summary.bestDay] + ', ' + summary.bestTime) + '</strong>' +
+          ' <span class="sc-best-score">· ' + summary.bestCount + '/' + total + '</span>' +
+        '</div>';
+    } else if (total > 0) {
+      bottomHtml = '<div class="sc-best-slot hint">Calculando melhor horário…</div>';
+    } else {
+      bottomHtml = '<div class="sc-best-slot hint">Compartilhe o link para receber respostas</div>';
+    }
+
+    var el = document.createElement('div');
+    el.className = 'session-card';
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('role', 'article');
+
+    el.innerHTML =
+      '<div class="sc-top">' +
+        '<div class="sc-title">' + escHtml(s.title) + '</div>' +
+        badgeHtml +
+      '</div>' +
+      '<div class="sc-date">' + escHtml(formatDateRelative(s.createdAt)) + '</div>' +
+      renderMiniHeatmap(summary, total) +
+      bottomHtml +
+      '<div class="sc-actions">' +
+        '<button class="sc-act sc-act-icon sc-act-copy" aria-label="Copiar link de convite" title="Copiar link">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+        '</button>' +
+        '<button class="sc-act sc-act-icon sc-act-edit" aria-label="Renomear sessão" title="Renomear">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+        '</button>' +
+        '<button class="sc-act sc-act-icon sc-act-delete" aria-label="Excluir sessão" title="Excluir">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+        '</button>' +
+        '<button class="sc-act sc-act-open" aria-label="Abrir painel da sessão ' + escHtml(s.title) + '">Abrir painel →</button>' +
+      '</div>';
+
+    el.addEventListener('click', function(e) {
+      if (!e.target.closest('.sc-actions')) selectSession(s.id, s.title);
+    });
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectSession(s.id, s.title); }
+    });
+    el.querySelector('.sc-act-copy').addEventListener('click', function(e) {
+      e.stopPropagation(); copySessionLink(s.id);
+    });
+    el.querySelector('.sc-act-edit').addEventListener('click', function(e) {
+      e.stopPropagation(); renameSession(s.id, s.title);
+    });
+    el.querySelector('.sc-act-delete').addEventListener('click', function(e) {
+      e.stopPropagation(); deleteSession(s.id, s.title);
+    });
+    el.querySelector('.sc-act-open').addEventListener('click', function(e) {
+      e.stopPropagation(); selectSession(s.id, s.title);
+    });
+
+    container.appendChild(el);
   });
+}
+
+function formatDateRelative(ts) {
+  if (!ts || !ts.seconds) return 'agora mesmo';
+  var diff = Date.now() - ts.seconds * 1000;
+  var min  = Math.floor(diff / 60000);
+  var hr   = Math.floor(diff / 3600000);
+  var day  = Math.floor(diff / 86400000);
+  if (min < 2)  return 'agora mesmo';
+  if (min < 60) return 'há ' + min + ' min';
+  if (hr  < 24) return 'há ' + hr + ' h';
+  if (day < 7)  return 'há ' + day + ' dia' + (day > 1 ? 's' : '');
+  return new Date(ts.seconds * 1000).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function renderMiniHeatmap(summary, total) {
+  var ROW_TIMES = [
+    ['09:00','09:30','10:00','10:30'],
+    ['11:00','11:30','12:00'],
+    ['14:00','14:30','15:00','15:30','16:00','16:30','17:00']
+  ];
+  var slots = (summary && summary.slots) || {};
+
+  var html = '<div class="sc-days" aria-hidden="true">';
+  DAYS.forEach(function(d) { html += '<span>' + DAY_ABBR[d] + '</span>'; });
+  html += '</div><div class="sc-heatmap" aria-hidden="true">';
+
+  ROW_TIMES.forEach(function(times) {
+    DAYS.forEach(function(day) {
+      var peak = 0;
+      if (total > 0) {
+        times.forEach(function(t) {
+          var v = slots[day + '_' + t] || 0;
+          if (v > peak) peak = v;
+        });
+      }
+      var cls = 'sc-cell ';
+      if (peak === 0 || total === 0) cls += 'sc-h0';
+      else if (peak / total >= 1.0)  cls += 'sc-h3';
+      else if (peak / total >= 0.5)  cls += 'sc-h2';
+      else                            cls += 'sc-h1';
+      html += '<span class="' + cls + '"></span>';
+    });
+  });
+  return html + '</div>';
 }
 
 // ============================================================

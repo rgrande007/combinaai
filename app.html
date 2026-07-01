@@ -176,7 +176,7 @@
         <div class="card">
           <div class="card-title">Selecione os horários disponíveis</div>
           <p class="hint" style="margin-bottom:.9rem;">
-            Clique para selecionar ou desmarcar. Clique e arraste para marcar vários de uma vez.
+            Toque ou clique para selecionar. <strong>Arraste</strong> para marcar vários horários de uma vez — deslize na vertical para múltiplos horários no mesmo dia.
           </p>
           <div class="grid-wrapper" role="group" aria-label="Grade de disponibilidade de horários">
             <table class="availability-grid" id="grid-table">
@@ -215,6 +215,14 @@
       </div><!-- /form-section -->
 
     </main>
+  </div>
+
+  <!-- Sticky save bar (mobile only, shown when grid is visible) -->
+  <div id="sticky-save-bar" class="sticky-save-bar" aria-hidden="true">
+    <span id="sticky-count" class="sticky-count"></span>
+    <button class="btn btn-primary sticky-save-btn" id="sticky-save-btn" aria-label="Salvar disponibilidade">
+      Salvar disponibilidade
+    </button>
   </div>
 
   <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
