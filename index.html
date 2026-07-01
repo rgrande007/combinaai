@@ -1034,48 +1034,59 @@
   .ps-count.visible       { display: inline-block; }
   .ps-count--violet       { color: var(--violet); background: rgba(107,76,246,.08); border-color: rgba(107,76,246,.2); }
 
-  /* Botão "+ Nova sessão" */
-  .btn-new-session {
-    display: inline-flex; align-items: center; gap: .45rem;
-    padding: .42rem .9rem;
+  /* Barra de criação rápida — sempre visível, compacta */
+  .quick-add-bar {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(27,168,144,.025);
+    transition: background var(--t);
+  }
+  .quick-add-bar:focus-within {
+    background: rgba(27,168,144,.055);
+  }
+  .quick-add-icon {
+    color: var(--text-dim);
+    flex-shrink: 0;
+    line-height: 0;
+    transition: color var(--t);
+  }
+  .quick-add-bar:focus-within .quick-add-icon { color: var(--primary); }
+  .quick-add-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: .87rem;
+    color: var(--text);
+    padding: .3rem 0;
+    min-width: 0;
+  }
+  .quick-add-input::placeholder { color: var(--text-dim); font-size: .84rem; }
+  .quick-add-btn {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .35rem .9rem;
     border-radius: var(--radius-sm);
-    border: 1.5px solid var(--primary);
-    background: var(--primary-light);
-    color: var(--primary);
+    background: var(--primary);
+    color: #fff;
     font-family: var(--font-display);
-    font-size: .78rem;
+    font-size: .76rem;
     font-weight: 700;
+    border: none;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
-    transition: background var(--t), color var(--t);
+    transition: background var(--t), transform .12s, opacity var(--t);
   }
-  .btn-new-session:hover                   { background: var(--primary); color: #fff; }
-  .btn-new-session[aria-expanded="true"]   { background: var(--primary); color: #fff; }
-  .btn-new-session[aria-expanded="true"] svg { transform: rotate(45deg); }
-  .btn-new-session svg { transition: transform .22s cubic-bezier(.22,.68,0,1.2); }
-
-  /* Formulário retrátil — smooth grid-row animation */
-  .create-form-drawer {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows .32s cubic-bezier(.22,.68,0,1.2);
-  }
-  .create-form-drawer.open { grid-template-rows: 1fr; }
-  .create-form-inner {
-    overflow: hidden;
-    min-height: 0;
-    padding: 0 1.1rem;
-    transition: padding .32s cubic-bezier(.22,.68,0,1.2), border-color .32s;
-    border-bottom: 0px solid var(--border);
-  }
-  .create-form-drawer.open .create-form-inner {
-    padding: 1rem 1.1rem;
-    border-bottom: 1px solid var(--border);
-  }
+  .quick-add-btn:hover  { background: var(--primary-dark); }
+  .quick-add-btn:active { transform: scale(.97); }
+  .quick-add-btn:disabled { opacity: .45; pointer-events: none; }
 
   /* Containers das listas */
-  .ps-list-container { padding: .6rem .6rem; }
+  .ps-list-container { padding: .55rem .55rem; }
   .ps-list-container:empty { padding: 0; }
 
   /* Divisória entre papéis */
@@ -1477,34 +1488,25 @@
                 </div>
               </div>
             </div>
-            <button class="btn-new-session" id="create-toggle-btn"
-                    aria-expanded="false" aria-controls="create-form-drawer"
-                    aria-label="Criar nova sessão">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          </div>
+
+          <!-- Barra de criação rápida (sempre visível, inline) -->
+          <div class="quick-add-bar" role="form" aria-label="Criar nova sessão">
+            <div class="quick-add-icon" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Nova sessão
-            </button>
-          </div>
-
-          <!-- Formulário retrátil -->
-          <div class="create-form-drawer" id="create-form-drawer"
-               role="region" aria-label="Criar nova sessão" aria-hidden="true">
-            <div class="create-form-inner">
-              <div class="form-group" style="margin-bottom:.75rem;">
-                <label class="form-label" for="session-title-input">Nome da reunião</label>
-                <input type="text" id="session-title-input" class="form-input"
-                       placeholder="Ex: Reunião de alinhamento Q3"
-                       maxlength="100" autocomplete="off" />
-              </div>
-              <button class="btn btn-primary" id="create-session-btn"
-                      style="width:100%;padding:.85rem 1.25rem;font-size:1rem;"
-                      aria-label="Criar sessão e gerar link de convite">
-                Criar sessão e gerar link
-              </button>
             </div>
+            <input type="text" id="session-title-input" class="quick-add-input"
+                   placeholder="Nome da nova reunião..."
+                   maxlength="100" autocomplete="off"
+                   aria-label="Nome da nova reunião" />
+            <button class="quick-add-btn" id="create-session-btn"
+                    aria-label="Criar sessão e gerar link de convite">
+              Criar
+            </button>
           </div>
 
           <!-- Lista de sessões -->

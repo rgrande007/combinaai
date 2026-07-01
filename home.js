@@ -95,10 +95,6 @@ function doSignout() {
   document.getElementById('legacy-banner').style.display = 'none';
   var parCard = document.getElementById('participations-card');
   if (parCard) parCard.style.display = 'none';
-  var drawer = document.getElementById('create-form-drawer');
-  if (drawer) { drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true'); }
-  var toggleBtn = document.getElementById('create-toggle-btn');
-  if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
   var sb = document.getElementById('session-count-badge');
   if (sb) { sb.textContent = ''; sb.classList.remove('visible'); }
   var pb = document.getElementById('participation-count-badge');
@@ -213,19 +209,6 @@ function initAdmin(user) {
     document.getElementById('create-session-btn').addEventListener('click', createSession);
     document.getElementById('session-title-input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') createSession();
-    });
-    document.getElementById('create-toggle-btn').addEventListener('click', function() {
-      var drawer = document.getElementById('create-form-drawer');
-      var isOpen = drawer.classList.contains('open');
-      drawer.classList.toggle('open', !isOpen);
-      drawer.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
-      this.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-      if (!isOpen) {
-        setTimeout(function() {
-          var inp = document.getElementById('session-title-input');
-          if (inp) inp.focus();
-        }, 340);
-      }
     });
     document.getElementById('back-to-sessions-btn').addEventListener('click', backToSessions);
     document.getElementById('copy-invite-session-btn').addEventListener('click', copyInviteLink);
@@ -357,11 +340,6 @@ async function createSession() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     titleInput.value = '';
-    // Fecha o formulário
-    var drawer = document.getElementById('create-form-drawer');
-    var toggleBtn = document.getElementById('create-toggle-btn');
-    if (drawer) { drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true'); }
-    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
     selectSession(sessionId, title);
   } catch(err) {
     console.error('Erro ao criar sessão:', err);
@@ -618,7 +596,7 @@ function renderSessionList(sessions) {
     container.innerHTML =
       '<div class="session-empty-state">' +
         '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>' +
-        '<p>Nenhuma sessão criada ainda.<br><span class="hint">Clique em "Nova sessão" para começar.</span></p>' +
+        '<p>Nenhuma sessão ainda.<br><span class="hint">Digite o nome acima e clique em <strong>Criar</strong>.</span></p>' +
       '</div>';
     var badge = document.getElementById('session-count-badge');
     if (badge) { badge.textContent = ''; badge.classList.remove('visible'); }
