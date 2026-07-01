@@ -1034,56 +1034,126 @@
   .ps-count.visible       { display: inline-block; }
   .ps-count--violet       { color: var(--violet); background: rgba(107,76,246,.08); border-color: rgba(107,76,246,.2); }
 
-  /* Barra de criação rápida — sempre visível, compacta */
-  .quick-add-bar {
+  /* ── Card "Nova sessão" — alto contraste, hero visual ── */
+  .create-session-hero {
+    background: linear-gradient(135deg, #1BA890 0%, #10806D 55%, #0A6B5C 100%);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.35rem 1.3rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(27,168,144,.35);
+  }
+  .create-session-hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -40px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.07);
+    pointer-events: none;
+  }
+  .create-session-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -35px; right: 22%;
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.04);
+    pointer-events: none;
+  }
+  .csh-top {
     display: flex;
     align-items: center;
-    gap: .6rem;
-    padding: .65rem 1rem;
-    border-bottom: 1px solid var(--border);
-    background: rgba(27,168,144,.025);
-    transition: background var(--t);
+    gap: .9rem;
+    margin-bottom: 1.1rem;
+    position: relative;
+    z-index: 1;
   }
-  .quick-add-bar:focus-within {
-    background: rgba(27,168,144,.055);
-  }
-  .quick-add-icon {
-    color: var(--text-dim);
-    flex-shrink: 0;
-    line-height: 0;
-    transition: color var(--t);
-  }
-  .quick-add-bar:focus-within .quick-add-icon { color: var(--primary); }
-  .quick-add-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-family: var(--font-body, 'Inter', sans-serif);
-    font-size: .87rem;
-    color: var(--text);
-    padding: .3rem 0;
-    min-width: 0;
-  }
-  .quick-add-input::placeholder { color: var(--text-dim); font-size: .84rem; }
-  .quick-add-btn {
-    display: inline-flex; align-items: center; gap: .3rem;
-    padding: .35rem .9rem;
-    border-radius: var(--radius-sm);
-    background: var(--primary);
+  .csh-ico {
+    width: 42px; height: 42px;
+    border-radius: 11px;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center;
     color: #fff;
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+  }
+  .csh-title {
     font-family: var(--font-display);
-    font-size: .76rem;
-    font-weight: 700;
+    font-weight: 800;
+    font-size: 1rem;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: .18rem;
+  }
+  .csh-sub {
+    font-size: .75rem;
+    color: rgba(255,255,255,.72);
+    line-height: 1.4;
+  }
+  .csh-form {
+    display: flex;
+    gap: .55rem;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  .csh-input {
+    flex: 1;
+    background: rgba(255,255,255,.18);
+    border: 1.5px solid rgba(255,255,255,.28);
+    border-radius: var(--radius-sm);
+    padding: .68rem 1rem;
+    font-size: .9rem;
+    color: #fff;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    outline: none;
+    transition: background .18s, border-color .18s;
+    min-width: 0;
+    backdrop-filter: blur(4px);
+  }
+  .csh-input::placeholder { color: rgba(255,255,255,.52); }
+  .csh-input:focus {
+    background: rgba(255,255,255,.26);
+    border-color: rgba(255,255,255,.6);
+  }
+  .csh-btn {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .68rem 1.15rem;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: #0A6B5C;
+    font-family: var(--font-display);
+    font-size: .85rem;
+    font-weight: 800;
     border: none;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
-    transition: background var(--t), transform .12s, opacity var(--t);
+    box-shadow: 0 2px 10px rgba(0,0,0,.18);
+    transition: transform .14s, box-shadow .14s;
   }
-  .quick-add-btn:hover  { background: var(--primary-dark); }
-  .quick-add-btn:active { transform: scale(.97); }
-  .quick-add-btn:disabled { opacity: .45; pointer-events: none; }
+  .csh-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(0,0,0,.26); }
+  .csh-btn:active { transform: scale(.97); box-shadow: 0 1px 6px rgba(0,0,0,.15); }
+  .csh-btn:disabled { opacity: .55; pointer-events: none; }
+  .csh-btn .spinner,
+  .csh-spinner {
+    border-color: rgba(10,107,92,.18) !important;
+    border-top-color: #0A6B5C !important;
+  }
+  @media (max-width: 520px) {
+    .csh-form { flex-direction: column; }
+    .csh-btn { width: 100%; justify-content: center; }
+  }
+
+  /* Seções — cabeçalhos coloridos por papel */
+  .panel-section--org .ps-header { background: rgba(27,168,144,.07); }
+  .panel-section--par .ps-header { background: rgba(107,76,246,.07); }
+  [data-theme="light"] .panel-section--org { background: #F4FBFA; }
+  [data-theme="light"] .panel-section--par { background: #F8F6FF; }
+  [data-theme="light"] .panel-section--org .ps-header { background: rgba(27,168,144,.09); }
+  [data-theme="light"] .panel-section--par .ps-header { background: rgba(107,76,246,.08); }
 
   /* Containers das listas */
   .ps-list-container { padding: .55rem .55rem; }
@@ -1467,6 +1537,40 @@
       <!-- ── Gerenciador de sessões ── -->
       <div id="session-manager">
 
+        <!-- ── Card principal: Nova sessão (alto contraste) ── -->
+        <div class="create-session-hero" id="session-creator-card">
+          <div class="csh-top">
+            <div class="csh-ico" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8"  y1="2" x2="8"  y2="6"/>
+                <line x1="12" y1="14" x2="12" y2="18"/>
+                <line x1="10" y1="16" x2="14" y2="16"/>
+              </svg>
+            </div>
+            <div>
+              <div class="csh-title">Nova sessão</div>
+              <p class="csh-sub">Dê um nome, gere o link e compartilhe com o grupo</p>
+            </div>
+          </div>
+          <div class="csh-form" role="form" aria-label="Criar nova sessão">
+            <input type="text" id="session-title-input" class="csh-input"
+                   placeholder="Ex: Reunião de alinhamento Q3"
+                   maxlength="100" autocomplete="off"
+                   aria-label="Nome da nova reunião" />
+            <button class="csh-btn" id="create-session-btn"
+                    aria-label="Criar sessão e gerar link de convite">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Criar sessão
+            </button>
+          </div>
+        </div>
+
         <!-- ── Seção: Organizador ── -->
         <div class="panel-section panel-section--org" id="session-list-card">
           <div class="ps-header">
@@ -1489,26 +1593,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Barra de criação rápida (sempre visível, inline) -->
-          <div class="quick-add-bar" role="form" aria-label="Criar nova sessão">
-            <div class="quick-add-icon" aria-hidden="true">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </div>
-            <input type="text" id="session-title-input" class="quick-add-input"
-                   placeholder="Nome da nova reunião..."
-                   maxlength="100" autocomplete="off"
-                   aria-label="Nome da nova reunião" />
-            <button class="quick-add-btn" id="create-session-btn"
-                    aria-label="Criar sessão e gerar link de convite">
-              Criar
-            </button>
-          </div>
-
           <!-- Lista de sessões -->
           <div id="session-list-container" class="ps-list-container"></div>
         </div>

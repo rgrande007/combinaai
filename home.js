@@ -329,7 +329,7 @@ async function createSession() {
 
   var btn = document.getElementById('create-session-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Criando...';
+  btn.innerHTML = '<span class="spinner csh-spinner"></span> Criando...';
 
   try {
     var sessionId  = generateSessionId();
@@ -789,7 +789,7 @@ function animateCounter(el, toValue) {
 
 function animateCards(container) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var cards = (container || document).querySelectorAll('.card, .panel-section, .admin-welcome, .legacy-banner');
+  var cards = (container || document).querySelectorAll('.card, .panel-section, .admin-welcome, .legacy-banner, .create-session-hero');
   cards.forEach(function(card, i) {
     card.style.animation = 'none';
     void card.offsetWidth;
