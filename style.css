@@ -718,6 +718,11 @@ body::before {
    Barra de ações (admin)
    ============================================= */
 .actions-bar { display: flex; flex-wrap: wrap; gap: .6rem; }
+.actions-bar-danger {
+  display: flex; flex-wrap: wrap; gap: .6rem;
+  margin-top: .75rem; padding-top: .75rem;
+  border-top: 1px solid rgba(239,68,68,.2);
+}
 
 /* =============================================
    Legenda
@@ -824,6 +829,29 @@ body::before {
   color: var(--text-muted);
   font-size: .875rem;
 }
+.rec-share-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  margin-top: .85rem;
+  font-size: .78rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.rec-share-cta svg { color: var(--primary); flex-shrink: 0; }
+.rec-share-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+.rec-share-btn:hover { color: var(--primary-dark); }
 
 /* =============================================
    Rótulo de seção
@@ -1013,6 +1041,8 @@ body::before {
   .stats-grid        { grid-template-columns: repeat(2, 1fr); }
   .actions-bar       { flex-direction: column; }
   .actions-bar .btn  { width: 100%; }
+  .actions-bar-danger { flex-direction: column; }
+  .actions-bar-danger .btn { width: 100%; }
   .form-input        { max-width: 100%; font-size: 1rem; }
   .stat-number       { font-size: 1.8rem; }
   .auth-card         { padding: 2rem 1.5rem; }
@@ -1433,10 +1463,24 @@ body::before {
   outline: none;
 }
 .session-active-link {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
   font-size: .72rem;
-  color: var(--text-muted);
-  word-break: break-all;
   line-height: 1.4;
+  flex-wrap: wrap;
+}
+.sld-label { color: var(--text-dim); }
+.sld-code {
+  font-family: 'Courier New', monospace;
+  font-size: .71rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  padding: .05rem .35rem;
+  letter-spacing: .04em;
 }
 .session-active-actions {
   display: flex;
@@ -1445,6 +1489,29 @@ body::before {
   flex-wrap: wrap;
   align-items: center;
 }
+
+/* Linha compacta de email no card de Identificação (app.html) */
+.ident-email-row {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin-top: .75rem;
+  padding: .55rem .75rem;
+  background: var(--primary-light);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+}
+.ident-email-row svg { color: var(--primary); flex-shrink: 0; }
+.ident-email-text {
+  font-size: .82rem;
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ident-email-lock { color: var(--text-dim); flex-shrink: 0; display: flex; }
 
 /* Banner "você já respondeu" no app.html */
 .already-submitted-banner {

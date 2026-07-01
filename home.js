@@ -346,7 +346,8 @@ async function createSession() {
     showToast('Erro ao criar sessão. Tente novamente.', 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Criar sessão e gerar link';
+    btn.innerHTML =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Criar sessão';
   }
 }
 
@@ -436,7 +437,11 @@ function selectSession(sessionId, title) {
   document.getElementById('session-title-display').textContent = title;
   var baseUrl = window.location.origin + '/';
   var link    = baseUrl + 'app.html?sessao=' + sessionId;
-  document.getElementById('session-link-display').textContent = link;
+  var linkEl  = document.getElementById('session-link-display');
+  linkEl.textContent = '';
+  linkEl.innerHTML =
+    '<span class="sld-label">Link de convite</span>' +
+    '<span class="sld-code">' + escHtml(sessionId) + '</span>';
 
   document.getElementById('confirmed-slot-admin').style.display = 'none';
   currentResponses = [];
@@ -641,7 +646,11 @@ function renderSessionList(sessions) {
     } else if (total > 0) {
       bottomHtml = '<div class="sc-best-slot hint">Calculando melhor horário…</div>';
     } else {
-      bottomHtml = '<div class="sc-best-slot hint">Compartilhe o link para receber respostas</div>';
+      bottomHtml =
+        '<button class="sc-share-hint-btn" aria-label="Copiar link de convite para ' + escHtml(s.title) + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+          'Copiar link para compartilhar' +
+        '</button>';
     }
 
     var el = document.createElement('div');
@@ -664,6 +673,7 @@ function renderSessionList(sessions) {
         '<button class="sc-act sc-act-icon sc-act-edit" aria-label="Renomear sessão" title="Renomear">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
         '</button>' +
+        '<span class="sc-act-sep" aria-hidden="true"></span>' +
         '<button class="sc-act sc-act-icon sc-act-delete" aria-label="Excluir sessão" title="Excluir">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
         '</button>' +
@@ -675,6 +685,10 @@ function renderSessionList(sessions) {
     });
     el.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectSession(s.id, s.title); }
+    });
+    var shareHintBtn = el.querySelector('.sc-share-hint-btn');
+    if (shareHintBtn) shareHintBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); copySessionLink(s.id);
     });
     el.querySelector('.sc-act-copy').addEventListener('click', function(e) {
       e.stopPropagation(); copySessionLink(s.id);
@@ -820,7 +834,14 @@ function renderRecommendation(responses) {
     titleEl.textContent    = 'Recomendação de Horário';
     subtitleEl.textContent = 'Aguardando respostas dos participantes.';
     contentEl.innerHTML    =
-      '<div class="rec-empty hint">Assim que os participantes enviarem suas disponibilidades, a melhor opção de horário aparecerá aqui.</div>';
+      '<div class="rec-empty hint">Assim que os participantes enviarem suas disponibilidades, a melhor opção de horário aparecerá aqui.</div>' +
+      '<div class="rec-share-cta">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>' +
+        '<span>Ninguém respondeu ainda —</span>' +
+        '<button class="rec-share-btn" id="rec-copy-link-btn">copiar link de convite</button>' +
+      '</div>';
+    var shareBtn = document.getElementById('rec-copy-link-btn');
+    if (shareBtn) shareBtn.addEventListener('click', copyInviteLink);
     return;
   }
 
@@ -884,7 +905,7 @@ function renderRecommendation(responses) {
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">' +
         '<div class="rec-score"><div class="rec-score-num">' + slot.count + '<span class="rec-score-den">/' + total + '</span></div></div>' +
         '<button class="btn btn-violet rec-confirm-btn" data-day="' + slot.day + '" data-time="' + escHtml(slot.time) + '" ' +
-          'style="font-size:.68rem;padding:.2rem .6rem;white-space:nowrap;" ' +
+          'style="font-size:.8rem;padding:.45rem 1rem;white-space:nowrap;min-height:36px;" ' +
           'aria-label="Confirmar ' + escHtml(DAY_LABELS_FULL[slot.day]) + ' às ' + escHtml(slot.time) + '">Confirmar</button>' +
       '</div>';
     list.appendChild(el);

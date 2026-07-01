@@ -103,7 +103,7 @@ function showAppContent(user) {
   nameInput.value = savedName || user.displayName || '';
 
   var emailDisplay = document.getElementById('email-display');
-  if (emailDisplay) emailDisplay.value = user.email;
+  if (emailDisplay) emailDisplay.textContent = user.email;
 
   loadSessionInfo();
   buildGrid();
